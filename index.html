@@ -13,21 +13,27 @@
     --emerald:#10B981; --emerald-soft:#34D399; --sky:#60A5FA;
     --text:#FFFFFF; --text-2:#CBD5E1; --muted:#94A3B8;
     color-scheme: dark;
+    --sunray: repeating-conic-gradient(from 0deg at 50% 28%, rgba(255,255,255,.05) 0deg 3deg, transparent 3deg 12deg, rgba(96,165,250,.07) 12deg 15deg, transparent 15deg 24deg),
+      linear-gradient(115deg, transparent 35%, rgba(255,255,255,.08) 48%, transparent 60%),
+      radial-gradient(60% 45% at 50% 28%, rgba(59,130,246,.38), transparent 70%),
+      radial-gradient(50% 40% at 88% 82%, rgba(239,68,68,.26), transparent 70%),
+      linear-gradient(170deg, #111B33 0%, #0F172A 55%, #0B1222 100%);
   }
   *{box-sizing:border-box}
   body{
     margin:0; min-height:100vh; color:var(--text);
     font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
-    background:
-      radial-gradient(1000px 520px at 8% -12%, rgba(59,130,246,.22), transparent 60%),
-      radial-gradient(900px 480px at 110% 8%, rgba(79,70,229,.2), transparent 55%),
-      var(--base);
-    background-attachment:fixed;
+    background:var(--sunray); background-attachment:fixed;
   }
 
   /* Splash with glowing, floating logo */
-  #splash{position:fixed;inset:0;display:grid;place-items:center;background:var(--base);transition:opacity .4s;z-index:9}
-  #splash img{width:220px;max-width:70vw;filter:drop-shadow(0 0 28px rgba(59,130,246,.45));animation:float 3s ease-in-out infinite}
+  #splash{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--sunray);transition:opacity .4s;z-index:9}
+  .boot{display:flex;flex-direction:column;align-items:center;gap:22px}
+  .loader{width:170px;height:4px;border-radius:999px;background:rgba(51,65,85,.6);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.5)}
+  .loader i{display:block;width:40%;height:100%;border-radius:999px;background:linear-gradient(90deg,#3B82F6,#818CF8,#3B82F6);animation:slide 1.2s ease-in-out infinite}
+  @keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+  .boot p{color:var(--muted);font-size:.85rem;margin:0;letter-spacing:.08em}
+  #splash img{width:200px;max-width:60vw;filter:drop-shadow(0 0 28px rgba(59,130,246,.45));animation:float 3s ease-in-out infinite}
   @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 
   .hidden{display:none!important}
@@ -122,11 +128,11 @@
   .msg{min-height:1.3em; color:var(--sky); font-size:.9em; margin-top:6px}
   p{color:var(--text-2)}
 
-  @media (prefers-reduced-motion: reduce){ #splash img{animation:none} }
+  @media (prefers-reduced-motion: reduce){ #splash img, .loader i{animation:none} }
 </style>
 </head>
 <body>
-<div id="splash"><img src="logo.webp" alt="Bash Clips TV"></div>
+<div id="splash"><div class="boot"><img src="logo.webp" alt="Bash Clips TV"><div class="loader"><i></i></div><p>Loading</p></div></div>
 
 <main>
   <section id="auth" class="hidden">
@@ -185,32 +191,54 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', 
 
 let mode = 'in', cur = 'NGN', user = null, token = null, guest = false;
 
-/* ---------- Splash, then sign-in or catalog ---------- */
-const started = Date.now();
-sb.auth.getSession().then(({ data }) => {
-  user = data.session?.user || null;
-  token = data.session?.access_token || null;
-  const wait = Math.max(0, 1500 - (Date.now() - started));
-  setTimeout(() => {
-    $('splash').style.opacity = 0;
-    setTimeout(() => $('splash').classList.add('hidden'), 400);
-    if (user) enter(); else show('auth', true);
-  }, wait);
-});
-
-sb.auth.onAuthStateChange((event, session) => {
-  user = session?.user || null;
-  token = session?.access_token || null;
-  if (event === 'SIGNED_IN') enter();
-});
-
+/* ---------- Boot: logo in the middle while the app loads ---------- */
+const BOOT_MIN_MS = 1500;
+let booted = false;
+function showSplash() {
+  const s = $('splash');
+  s.classList.remove('hidden');
+  s.style.opacity = 1;
+}
+function hideSplash() {
+  $('splash').style.opacity = 0;
+  setTimeout(() => $('splash').classList.add('hidden'), 400);
+}
 async function enter() {
   show('auth', false);
   show('app', true);
   show('wallet', false);
   await loadCatalog();
-  if (user) loadBalance();
+  if (user) await loadBalance();
 }
+// Runs on first load and again after each sign-in: logo in the middle, then the app.
+async function bootApp(session) {
+  user = session?.user || null;
+  token = session?.access_token || null;
+  showSplash();
+  const start = Date.now();
+  try {
+    if (user) await enter(); else show('auth', true);
+  } catch (err) {
+    show('auth', true);
+    say('authMsg', 'Could not load. Check your connection and refresh.');
+  }
+  const remaining = Math.max(0, BOOT_MIN_MS - (Date.now() - start));
+  await new Promise(r => setTimeout(r, remaining));
+  hideSplash();
+}
+
+// Supabase reports the sign-in state once it has finished reading the Google return link.
+// Wait for that event instead of checking the session early.
+let lastBootUser = undefined;
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT') { user = null; token = null; lastBootUser = undefined; return; }
+  if (event !== 'INITIAL_SESSION' && event !== 'SIGNED_IN') return;
+  const id = session?.user?.id || null;
+  // Ignore repeat events for the same user, so the app doesn't boot twice.
+  if (event === 'SIGNED_IN' && id === lastBootUser) return;
+  lastBootUser = id;
+  bootApp(session);
+});
 
 /* ---------- Sign-in ---------- */
 $('tabIn').onclick = () => { mode = 'in'; say('authMsg', ''); };
