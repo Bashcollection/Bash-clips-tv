@@ -125,6 +125,7 @@
     box-shadow:0 24px 40px -22px rgba(0,0,0,.9);
   }
 
+  #dbg{position:fixed;left:0;right:0;bottom:0;max-height:28vh;overflow:auto;margin:0;padding:6px 8px;background:rgba(0,0,0,.85);color:#9fe8ff;font:11px/1.4 monospace;white-space:pre-wrap;z-index:99}
   .msg{min-height:1.3em; color:var(--sky); font-size:.9em; margin-top:6px}
   p{color:var(--text-2)}
 
@@ -168,6 +169,7 @@
   </section>
 </main>
 
+<pre id="dbg"></pre>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 <script>
@@ -188,6 +190,7 @@ const $ = id => document.getElementById(id);
 const show = (id, on) => $(id).classList.toggle('hidden', !on);
 const say = (id, text) => { $(id).textContent = text; };
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const dbg = m => { const p = document.getElementById('dbg'); p.textContent += new Date().toLocaleTimeString() + '  ' + m + '\n'; p.scrollTop = p.scrollHeight; };
 
 let mode = 'in', cur = 'NGN', user = null, token = null, guest = false;
 
@@ -212,13 +215,15 @@ async function enter() {
 }
 // Runs on first load and again after each sign-in: logo in the middle, then the app.
 async function bootApp(session) {
+  dbg('boot: ' + (session?.user ? 'signed in' : 'no user') + ', showing logo');
   user = session?.user || null;
   token = session?.access_token || null;
   showSplash();
   const start = Date.now();
   try {
-    if (user) await enter(); else show('auth', true);
+    if (user) { await enter(); dbg('app shown'); } else { show('auth', true); dbg('sign-in shown'); }
   } catch (err) {
+    dbg('ERROR: ' + err.message);
     show('auth', true);
     say('authMsg', 'Could not load. Check your connection and refresh.');
   }
@@ -227,17 +232,27 @@ async function bootApp(session) {
   hideSplash();
 }
 
-// Supabase reports the sign-in state once it has finished reading the Google return link.
-// Wait for that event instead of checking the session early.
-let lastBootUser = undefined;
+// Supabase can report "no session" briefly after a Google return, before the real sign-in arrives.
+// Only act on a real session. If none arrives, show the sign-in screen after a short wait.
+let currentId = null;
+let authTimer = null;
 sb.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_OUT') { user = null; token = null; lastBootUser = undefined; return; }
-  if (event !== 'INITIAL_SESSION' && event !== 'SIGNED_IN') return;
-  const id = session?.user?.id || null;
-  // Ignore repeat events for the same user, so the app doesn't boot twice.
-  if (event === 'SIGNED_IN' && id === lastBootUser) return;
-  lastBootUser = id;
-  bootApp(session);
+  dbg('auth event: ' + event + (session?.user ? ' (signed in)' : ' (no session)'));
+  if (event === 'SIGNED_OUT') { user = null; token = null; currentId = null; return; }
+  if (session?.user) {
+    clearTimeout(authTimer);
+    user = session.user;
+    token = session.access_token;
+    if (session.user.id !== currentId) {
+      currentId = session.user.id;
+      bootApp(session);
+    }
+    return;
+  }
+  // No session yet: wait before showing sign-in, so a late sign-in can still take over.
+  if (!currentId && !authTimer) {
+    authTimer = setTimeout(() => { authTimer = null; dbg('no session after 3s'); if (!currentId) bootApp(null); }, 3000);
+  }
 });
 
 /* ---------- Sign-in ---------- */
