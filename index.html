@@ -7,10 +7,10 @@
 <link rel="icon" href="logo.webp">
 <style>
   :root{
-    --surface:#1E293B; --surface-glass:rgba(30,41,59,.8);
+    --surface:#1E293B; --surface-glass:rgba(30,41,59,.82);
     --border:rgba(51,65,85,.6); --border-hi:rgba(148,163,184,.18);
     --blue:#3B82F6; --indigo:#4F46E5; --sky:#60A5FA;
-    --emerald-soft:#34D399;
+    --emerald:#34D399;
     --text:#FFFFFF; --text-2:#CBD5E1; --muted:#94A3B8;
     color-scheme: dark;
     --sunray: repeating-conic-gradient(from 0deg at 50% 28%, rgba(255,255,255,.05) 0deg 3deg, transparent 3deg 12deg, rgba(96,165,250,.07) 12deg 15deg, transparent 15deg 24deg),
@@ -20,127 +20,128 @@
       linear-gradient(170deg, #111B33 0%, #0F172A 55%, #0B1222 100%);
   }
   *{box-sizing:border-box}
-  body{
-    margin:0; min-height:100vh; color:var(--text);
-    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
-    background:var(--sunray); background-attachment:fixed;
-  }
+  body{margin:0;min-height:100vh;color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--sunray);background-attachment:fixed}
 
   #splash{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--sunray);transition:opacity .4s;z-index:9}
-  .boot{display:flex;flex-direction:column;align-items:center;gap:22px}
-  .loader{width:170px;height:4px;border-radius:999px;background:rgba(51,65,85,.6);overflow:hidden}
-  .loader i{display:block;width:40%;height:100%;border-radius:999px;background:linear-gradient(90deg,#3B82F6,#818CF8,#3B82F6);animation:slide 1.2s ease-in-out infinite}
-  @keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
   #splash img{width:200px;max-width:60vw;filter:drop-shadow(0 0 28px rgba(59,130,246,.45));animation:float 3s ease-in-out infinite}
   @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 
   .hidden{display:none!important}
-  main{max-width:520px;margin:0 auto;padding:20px}
+  .wrap{max-width:520px;margin:0 auto;padding:0 16px 40px}
 
-  input{
-    font:inherit; width:100%; padding:12px 14px; margin:6px 0; border-radius:12px;
-    color:var(--text); background:rgba(15,23,42,.7);
-    border:1px solid rgba(71,85,105,.6);
-    box-shadow:inset 0 2px 6px rgba(0,0,0,.45);
-  }
+  /* Top bar */
+  .topbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    margin:0 -16px 12px;padding:14px 16px;background:linear-gradient(180deg,rgba(30,41,59,.9),rgba(15,23,42,.75));
+    border-bottom:1px solid var(--border);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+  .brand-title{font-weight:800;background:linear-gradient(90deg,#FFFFFF 0%,#93C5FD 50%,#818CF8 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .balchip{width:auto;margin:0;padding:8px 14px;font-size:.9rem;border-radius:999px}
+
+  /* Tabs */
+  .tabs{display:flex;gap:8px;margin:0 0 14px}
+  .tabs button{flex:1;margin:0}
+
+  input{font:inherit;width:100%;padding:12px 14px;margin:6px 0;border-radius:12px;color:var(--text);background:rgba(15,23,42,.7);border:1px solid rgba(71,85,105,.6);box-shadow:inset 0 2px 6px rgba(0,0,0,.45)}
   input::placeholder{color:var(--muted)}
   input:focus{outline:none;border-color:var(--blue);box-shadow:inset 0 2px 6px rgba(0,0,0,.45),0 0 0 3px rgba(59,130,246,.25)}
 
-  button{
-    font:inherit; font-weight:600; width:100%; padding:12px 16px; margin:6px 0;
-    border-radius:12px; border:0; cursor:pointer; color:#fff;
+  button{font:inherit;font-weight:600;width:100%;padding:12px 16px;margin:6px 0;border-radius:12px;border:0;cursor:pointer;color:#fff;
     background:linear-gradient(135deg,#3B82F6 0%,#2563EB 45%,#4F46E5 100%);
-    box-shadow:0 10px 22px -10px rgba(59,130,246,.75), inset 0 1px 0 rgba(255,255,255,.35), inset 0 -2px 0 rgba(0,0,0,.25);
-    transition:transform .12s ease, filter .2s ease;
-  }
+    box-shadow:0 10px 22px -10px rgba(59,130,246,.75),inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,0,0,.25);
+    transition:transform .12s ease,filter .2s ease}
   button:hover{filter:brightness(1.08)}
   button:active{transform:translateY(1px) scale(.99)}
   button:disabled{opacity:.6;cursor:default}
-  button.alt{
-    color:var(--text-2);
-    background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.02)),var(--surface);
-    border:1px solid var(--border); border-top-color:var(--border-hi);
-    box-shadow:0 8px 18px -12px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.06);
-  }
+  button.alt{color:var(--text-2);background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.02)),var(--surface);
+    border:1px solid var(--border);border-top-color:var(--border-hi);box-shadow:0 8px 18px -12px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.06)}
 
-  .card{
-    border-radius:18px; padding:16px; margin:12px 0;
+  .card{border-radius:18px;padding:16px;margin:12px 0;cursor:pointer;
     background:linear-gradient(145deg,rgba(255,255,255,.09) 0%,rgba(255,255,255,.015) 45%,rgba(255,255,255,0) 100%),var(--surface-glass);
-    border:1px solid var(--border); border-top-color:var(--border-hi);
-    box-shadow:0 18px 40px -20px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.07);
-    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-  }
+    border:1px solid var(--border);border-top-color:var(--border-hi);
+    box-shadow:0 18px 40px -20px rgba(0,0,0,.85),inset 0 1px 0 rgba(255,255,255,.07);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+  .card.plain{cursor:default}
+  .card h2{margin:0 0 6px;font-size:1.05rem}
+  .card p{margin:4px 0;color:var(--text-2)}
+  .badge{display:inline-block;margin-left:8px;padding:3px 10px;border-radius:999px;font-size:.75rem;font-weight:600;color:var(--emerald);
+    background:rgba(16,185,129,.14);border:1px solid rgba(16,185,129,.35)}
+  .muted{color:var(--muted);font-size:.9rem}
+  .big{font-size:2.4rem;font-weight:800;text-align:center;margin:18px 0 6px}
+  .center{text-align:center}
 
-  .topbar{
-    position:sticky; top:0; z-index:5; margin:-20px -20px 12px; padding:14px 20px;
-    background:linear-gradient(180deg,rgba(30,41,59,.85),rgba(15,23,42,.7));
-    border-bottom:1px solid var(--border);
-    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
-  }
-  .brand-title{
-    font-weight:800; letter-spacing:-.01em;
-    background:linear-gradient(90deg,#FFFFFF 0%,#93C5FD 50%,#818CF8 100%);
-    -webkit-background-clip:text; background-clip:text; color:transparent;
-  }
-  .badge-free{
-    display:inline-block; margin-left:8px; padding:3px 10px; border-radius:999px;
-    font-size:.75rem; font-weight:600; color:var(--emerald-soft);
-    background:rgba(16,185,129,.14); border:1px solid rgba(16,185,129,.35);
-  }
-  h3{margin:0 0 10px; color:var(--text)}
-  p{color:var(--text-2)}
+  .seg{display:flex;gap:8px}
+  .seg button{flex:1;margin:6px 0}
 
-  .row{display:flex; gap:8px; align-items:center}
-  .row>*{flex:1}
-  .pack{display:flex; justify-content:space-between; align-items:center; padding:12px 14px}
+  .pack{display:flex;justify-content:space-between;align-items:center;cursor:default}
   .pack span{color:var(--text-2)}
-  .pack button{width:auto; flex:none; margin:0; padding:10px 16px}
+  .pack button{width:auto;flex:none;margin:0;padding:10px 16px}
 
-  video{width:100%; margin-top:10px; border-radius:14px; display:block; border:1px solid var(--border)}
+  video{width:100%;border-radius:14px;display:block;border:1px solid var(--border);margin-top:8px;background:#000}
 
-  .msg{min-height:1.3em; color:var(--sky); font-size:.9em; margin-top:6px}
-
-  /* On-screen status log: shows each step so you can read it on your phone. */
-  #status{
-    margin-top:16px; padding:10px 12px; border-radius:12px; font-family:ui-monospace,Menlo,Consolas,monospace;
-    font-size:.72rem; line-height:1.5; color:#93C5FD; background:rgba(2,6,23,.75);
-    border:1px solid var(--border); max-height:180px; overflow:auto; white-space:pre-wrap;
-  }
-
-  @media (prefers-reduced-motion: reduce){ #splash img, .loader i{animation:none} }
+  .msg{min-height:1.3em;color:var(--sky);font-size:.92em;margin:8px 2px}
+  .log{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.72rem;line-height:1.5;color:#93C5FD;background:rgba(2,6,23,.75);
+    border:1px solid var(--border);border-radius:12px;padding:10px 12px;max-height:320px;overflow:auto;white-space:pre-wrap}
+  .back{width:auto;margin:0 0 10px;padding:8px 14px;font-size:.9rem}
 </style>
 </head>
 <body>
-<div id="splash"><div class="boot"><img src="logo.webp" alt="Bash Clips TV"><div class="loader"><i></i></div></div></div>
+<div id="splash"><img src="logo.webp" alt="Bash Clips TV"></div>
 
-<main>
-  <section id="auth" class="hidden">
-    <img src="logo.webp" alt="Bash Clips TV" style="width:160px;display:block;margin:0 auto">
-    <div class="row">
-      <button type="button" id="tabIn">Sign in</button>
-      <button type="button" id="tabUp" class="alt">Sign up (+50 coins)</button>
-    </div>
-    <button type="button" id="google" class="alt">Continue with Google</button>
-    <input id="email" type="email" placeholder="Email" autocomplete="username">
-    <input id="pass" type="password" placeholder="Password" autocomplete="current-password">
-    <button type="button" id="authGo">Sign in</button>
-    <button type="button" id="guest" class="alt">Continue browsing as guest</button>
-    <div class="msg" id="authMsg"></div>
+<!-- Sign-in screen -->
+<main class="wrap hidden" id="scr-auth">
+  <img src="logo.webp" alt="Bash Clips TV" style="width:160px;display:block;margin:24px auto 8px">
+  <div class="seg">
+    <button type="button" id="tabIn">Sign in</button>
+    <button type="button" id="tabUp" class="alt">Sign up (+50 coins)</button>
+  </div>
+  <button type="button" id="google" class="alt">Continue with Google</button>
+  <input id="email" type="email" placeholder="Email" autocomplete="username">
+  <input id="pass" type="password" placeholder="Password" autocomplete="current-password">
+  <button type="button" id="authGo">Sign in</button>
+  <button type="button" id="guest" class="alt">Browse as guest</button>
+  <div class="msg" id="authMsg"></div>
+</main>
+
+<!-- Signed-in shell -->
+<div class="wrap hidden" id="shell">
+  <div class="topbar">
+    <strong class="brand-title">Bash Clips TV</strong>
+    <button type="button" class="balchip" id="balChip" title="Buy coins">— coins</button>
+  </div>
+  <nav class="tabs">
+    <button type="button" id="tWatch">Watch</button>
+    <button type="button" id="tCoins" class="alt">Coins</button>
+    <button type="button" id="tAccount" class="alt">Account</button>
+  </nav>
+
+  <!-- Watch: episode list -->
+  <section id="scr-watch">
+    <div id="list"></div>
+    <div class="msg" id="listMsg"></div>
   </section>
 
-  <section id="app" class="hidden">
-    <div class="topbar row"><strong class="brand-title">Bash Clips TV</strong><span id="bal" style="text-align:right"></span></div>
-    <div class="row" style="margin:12px 0">
-      <button type="button" id="navCat">Watch</button>
-      <button type="button" id="navWallet" class="alt">Coins</button>
-      <button type="button" id="signOut" class="alt">Sign out</button>
-    </div>
-    <div id="catalog"></div>
-    <div class="msg" id="catalogMsg"></div>
+  <!-- Episode: player or unlock -->
+  <section id="scr-episode" class="hidden">
+    <button type="button" class="alt back" id="epBack">← Back to episodes</button>
+    <div class="card plain" id="epCard"></div>
+    <div class="msg" id="epMsg"></div>
+  </section>
 
-    <div id="wallet" class="hidden card">
-      <h3>Coin wallet</h3>
-      <div class="row">
+  <!-- Coins: balance only -->
+  <section id="scr-coins" class="hidden">
+    <div class="card plain center">
+      <p class="muted">Your balance</p>
+      <div class="big" id="coinsBig">0</div>
+      <p class="muted">coins</p>
+    </div>
+    <button type="button" id="goBuy">Buy coins</button>
+  </section>
+
+  <!-- Buy: Flutterwave packs -->
+  <section id="scr-buy" class="hidden">
+    <button type="button" class="alt back" id="buyBack">← Back to coins</button>
+    <div class="card plain">
+      <h2>Buy coins</h2>
+      <div class="seg">
         <button type="button" id="curNGN">Naira (₦)</button>
         <button type="button" id="curUSD" class="alt">USD ($)</button>
       </div>
@@ -149,8 +150,19 @@
     </div>
   </section>
 
-  <div id="status"></div>
-</main>
+  <!-- Account: details, sign out, activity log -->
+  <section id="scr-account" class="hidden">
+    <div class="card plain">
+      <p class="muted">Signed in as</p>
+      <h2 id="acctEmail"></h2>
+      <button type="button" class="alt" id="signOut">Sign out</button>
+    </div>
+    <div class="card plain">
+      <h2>Activity log</h2>
+      <div class="log" id="log"></div>
+    </div>
+  </section>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://checkout.flutterwave.com/v3.js"></script>
@@ -169,128 +181,129 @@ const PACKS = [
 ];
 
 const $ = id => document.getElementById(id);
-const show = (id, on) => $(id).classList.toggle('hidden', !on);
-const say = (id, text) => { $(id).textContent = text; };
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
-const time = () => new Date().toLocaleTimeString();
+const say = (id, t) => { $(id).textContent = t; };
 
-// Visible step log. Each line is one step, so a failure shows exactly where it stopped.
-function step(text) {
-  console.log(text);
-  const s = $('status');
-  s.textContent += time() + '  ' + text + '\n';
-  s.scrollTop = s.scrollHeight;
-}
-
-let mode = 'in', cur = 'NGN', user = null, token = null;
-let shownFor = null;
+let mode = 'in', cur = 'NGN', user = null, token = null, shownFor = null;
 let fallbackTimer = null;
-let busy = false;
+let episodes = [];
+let balance = 0;
+let currentEp = null;
+const activity = [];
 
-/* ---------- Screens ---------- */
-function hideSplash() {
-  $('splash').style.opacity = 0;
-  setTimeout(() => $('splash').classList.add('hidden'), 400);
-}
-function showSignIn(message) {
-  show('app', false);
-  show('auth', true);
-  say('authMsg', message || '');
-}
-async function showApp() {
-  show('auth', false);
-  show('app', true);
-  show('wallet', false);
-  await Promise.all([loadCatalog(), loadBalance()]);
+/* ---------- Activity log (visible in Account) ---------- */
+function step(text) {
+  const line = new Date().toLocaleTimeString() + '  ' + text;
+  console.log(line);
+  activity.push(line);
+  if (activity.length > 200) activity.shift();
+  $('log').textContent = activity.join('\n');
+  $('log').scrollTop = $('log').scrollHeight;
 }
 
-/* ---------- Single router: every sign-in path ends here ---------- */
+/* ---------- Screen switching ---------- */
+const SCREENS = ['scr-auth','scr-watch','scr-episode','scr-coins','scr-buy','scr-account'];
+function go(name) {
+  SCREENS.forEach(s => $(s)?.classList.toggle('hidden', s !== name));
+  const inShell = name !== 'scr-auth';
+  $('shell').classList.toggle('hidden', !inShell);
+  document.querySelectorAll('.tabs button').forEach(b => b.className = b.id === tabFor(name) ? '' : 'alt');
+  window.scrollTo(0, 0);
+}
+function tabFor(screen) {
+  if (screen === 'scr-coins' || screen === 'scr-buy') return 'tCoins';
+  if (screen === 'scr-account') return 'tAccount';
+  return 'tWatch';
+}
+
+/* ---------- Balance ---------- */
+async function loadBalance() {
+  if (!user) return;
+  const { data, error } = await sb.from('profiles').select('coin_balance').eq('id', user.id).single();
+  if (error) { step('balance error: ' + error.message); return; }
+  balance = data?.coin_balance ?? 0;
+  $('balChip').textContent = balance + ' coins';
+  $('coinsBig').textContent = balance;
+}
+
+/* ---------- Session router ---------- */
 async function route(session) {
-  clearTimeout(fallbackTimer);
-  fallbackTimer = null;
-
+  clearTimeout(fallbackTimer); fallbackTimer = null;
   if (!session?.user) {
     user = null; token = null; shownFor = null;
-    step('route: no session, showing sign-in');
-    hideSplash();
-    showSignIn();
+    step('no session: showing sign-in');
+    $('shell').classList.add('hidden');
+    go('scr-auth');
     return;
   }
-
-  user = session.user;
-  token = session.access_token;
-  if (shownFor === user.id) return;   // duplicate event for the same user
+  user = session.user; token = session.access_token;
+  if (shownFor === user.id) return;
   shownFor = user.id;
-
-  step('route: signed in as ' + user.email + ', loading app');
-  try {
-    await showApp();
-    step('route: app shown');
-  } catch (err) {
-    step('route ERROR: ' + err.message);
-    showSignIn('Could not load the app: ' + err.message);
-  }
-  hideSplash();
+  step('signed in as ' + user.email);
+  $('acctEmail').textContent = user.email;
+  await loadCatalog();
+  await loadBalance();
+  go('scr-watch');
 }
 
-/* ---------- Session events from Supabase ---------- */
 sb.auth.onAuthStateChange((event, session) => {
   step('auth event: ' + event + (session?.user ? ' (session)' : ' (no session)'));
   if (event === 'SIGNED_OUT') { route(null); return; }
   if (session?.user) { route(session); return; }
-  // No session yet: give a Google or magic-link return a moment before showing sign-in.
   if (!fallbackTimer && !user) {
     fallbackTimer = setTimeout(() => { fallbackTimer = null; if (!user) route(null); }, 2500);
   }
 });
 
-/* ---------- Sign-in / sign-up form ---------- */
+/* ---------- Sign-in / sign-up ---------- */
 function setMode(next) {
   mode = next;
   $('tabIn').className = mode === 'in' ? '' : 'alt';
   $('tabUp').className = mode === 'up' ? '' : 'alt';
   $('authGo').textContent = mode === 'in' ? 'Sign in' : 'Create account (+50 coins)';
-  $('pass').autocomplete = mode === 'in' ? 'current-password' : 'new-password';
   say('authMsg', mode === 'up' ? 'Sign up gives you 50 coins.' : '');
 }
 $('tabIn').onclick = () => setMode('in');
 $('tabUp').onclick = () => setMode('up');
 setMode('in');
 
+let busy = false;
 $('authGo').onclick = async () => {
   if (busy) return;
   const email = $('email').value.trim();
   const password = $('pass').value;
-  step((mode === 'in' ? 'sign-in' : 'sign-up') + ' tapped for ' + (email || '(no email)'));
   if (!email || !password) { say('authMsg', 'Enter your email and password.'); return; }
   if (mode === 'up' && password.length < 6) { say('authMsg', 'Password must be at least 6 characters.'); return; }
-
-  busy = true;
-  $('authGo').disabled = true;
+  busy = true; $('authGo').disabled = true;
+  step((mode === 'in' ? 'sign-in' : 'sign-up') + ' for ' + email);
   say('authMsg', mode === 'in' ? 'Signing in...' : 'Creating your account...');
   try {
     const r = mode === 'in'
       ? await sb.auth.signInWithPassword({ email, password })
       : await sb.auth.signUp({ email, password });
-    if (r.error) {
-      step('auth error: ' + r.error.message);
-      say('authMsg', r.error.message);
-      return;
-    }
+    if (r.error) { step('auth error: ' + r.error.message); say('authMsg', r.error.message); return; }
     step('auth ok, session: ' + (r.data.session ? 'yes' : 'no'));
     if (r.data.session) { await route(r.data.session); return; }
-    say('authMsg', 'Check your email to confirm, then sign in.');
+    say('authMsg', 'Check your email to confirm, then sign in. (To skip this, turn off Confirm email in Supabase.)');
   } catch (err) {
     step('auth exception: ' + err.message);
     say('authMsg', 'Something went wrong: ' + err.message);
   } finally {
-    busy = false;
-    $('authGo').disabled = false;
+    busy = false; $('authGo').disabled = false;
   }
 };
-
 $('google').onclick = () => sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin } });
-$('guest').onclick = () => { step('guest browsing'); show('auth', false); show('app', true); loadCatalog(); };
+$('guest').onclick = () => { step('browsing as guest'); $('shell').classList.remove('hidden'); loadCatalog(); go('scr-watch'); };
+
+/* ---------- Tabs ---------- */
+$('tWatch').onclick = () => { go('scr-watch'); loadCatalog(); };
+$('tCoins').onclick = () => { go('scr-coins'); loadBalance(); };
+$('tAccount').onclick = () => go('scr-account');
+$('balChip').onclick = () => { if (!user) { go('scr-auth'); return; } renderPacks(); go('scr-buy'); };
+$('goBuy').onclick = () => { renderPacks(); go('scr-buy'); };
+$('buyBack').onclick = () => go('scr-coins');
+$('epBack').onclick = () => go('scr-watch');
+
 $('signOut').onclick = async () => {
   step('sign-out tapped');
   const { error } = await sb.auth.signOut();
@@ -298,56 +311,67 @@ $('signOut').onclick = async () => {
   route(null);
 };
 
-/* ---------- Navigation ---------- */
-$('navCat').onclick = () => show('wallet', false);
-$('navWallet').onclick = () => {
-  if (!user) { say('catalogMsg', 'Sign in to buy coins.'); return; }
-  show('wallet', true);
-  renderPacks();
-};
-
-/* ---------- Catalog ---------- */
+/* ---------- Catalog (Watch screen) ---------- */
 async function loadCatalog() {
   const { data, error } = await sb.from('episodes')
-    .select('id, episode_number, is_free, coin_cost, series:series_id(title, genre), episode_videos(video_url)')
+    .select('id, episode_number, is_free, coin_cost, series:series_id(title), episode_videos(video_url)')
     .order('episode_number');
-  if (error) { step('catalog error: ' + error.message); say('catalogMsg', error.message); return; }
+  if (error) { say('listMsg', error.message); step('catalog error: ' + error.message); return; }
+  episodes = data;
   step('catalog loaded: ' + data.length + ' episodes');
-  // RLS returns episode_videos only for free or unlocked episodes, so no URL means locked.
-  $('catalog').innerHTML = data.map(e => {
-    const url = e.episode_videos?.[0]?.video_url;
-    return `<div class="card"><strong>${esc(e.series.title)}</strong> · Episode ${e.episode_number}${e.is_free ? '<span class="badge-free">Free</span>' : ''}
-      ${url
-        ? `<video controls playsinline src="${esc(url)}"></video>`
-        : e.is_free
-          ? `<p>Video unavailable. Check the video link in the database.</p>`
-          : `<p>Locked</p><button type="button" onclick="unlock('${e.id}')">Unlock for ${e.coin_cost} coins</button>`}
+  const html = data.map(e => {
+    const unlocked = !!e.episode_videos?.[0]?.video_url;
+    const status = e.is_free ? '<span class="badge">Free</span>' : (unlocked ? '' : `<span class="muted"> · ${e.coin_cost} coins</span>`);
+    return `<div class="card" onclick="openEpisode('${e.id}')">
+      <h2>${esc(e.series.title)} · Episode ${e.episode_number} ${status}</h2>
+      <p class="muted">${unlocked || e.is_free ? 'Tap to watch' : 'Tap to unlock'}</p>
     </div>`;
-  }).join('') || '<p>No episodes yet.</p>';
+  }).join('');
+  $('list').innerHTML = html || '<p class="muted">No episodes yet.</p>';
 }
 
-window.unlock = async episodeId => {
-  if (!user) { say('catalogMsg', 'Sign in to unlock episodes.'); return; }
+/* ---------- Episode screen: player or unlock ---------- */
+window.openEpisode = id => {
+  const e = episodes.find(x => x.id === id);
+  if (!e) return;
+  currentEp = e;
+  const url = e.episode_videos?.[0]?.video_url;
+  const title = `${esc(e.series.title)} · Episode ${e.episode_number}`;
+  say('epMsg', '');
+  if (url) {
+    $('epCard').innerHTML = `<h2>${title}</h2><video controls playsinline src="${esc(url)}"></video>`;
+  } else if (e.is_free) {
+    $('epCard').innerHTML = `<h2>${title}</h2><p>This free episode has no video link yet. Check episode_videos in the database.</p>`;
+  } else {
+    $('epCard').innerHTML = `<h2>${title}</h2>
+      <p>Locked. Unlock this episode for ${e.coin_cost} coins.</p>
+      <p class="muted">Your balance: ${balance} coins</p>
+      <button type="button" id="unlockBtn">Unlock for ${e.coin_cost} coins</button>`;
+    $('unlockBtn').onclick = () => unlock(e.id);
+  }
+  go('scr-episode');
+};
+
+async function unlock(episodeId) {
+  if (!user) { say('epMsg', 'Sign in to unlock episodes.'); return; }
+  const btn = $('unlockBtn'); if (btn) btn.disabled = true;
+  say('epMsg', 'Unlocking...');
   step('unlock tapped for ' + episodeId);
   const { error } = await sb.rpc('unlock_episode', { p_episode_id: episodeId });
   if (error) {
     step('unlock error: ' + error.message);
-    say('catalogMsg', error.message.includes('not enough coins') ? 'Not enough coins. Buy more under Coins.' : error.message);
+    say('epMsg', error.message.includes('not enough coins') ? 'Not enough coins. Buy more under Coins.' : error.message);
+    if (btn) btn.disabled = false;
     return;
   }
-  say('catalogMsg', 'Unlocked.');
   await loadCatalog();
-  loadBalance();
-};
-
-async function loadBalance() {
-  if (!user) { $('bal').textContent = ''; return; }
-  const { data, error } = await sb.from('profiles').select('coin_balance').eq('id', user.id).single();
-  if (error) step('balance error: ' + error.message);
-  $('bal').textContent = (data?.coin_balance ?? 0) + ' coins';
+  await loadBalance();
+  step('unlock ok, balance now ' + balance);
+  openEpisode(episodeId);
+  say('epMsg', 'Unlocked. ' + (currentEp?.coin_cost || 0) + ' coins were deducted. Balance: ' + balance + '.');
 }
 
-/* ---------- Wallet and payment ---------- */
+/* ---------- Buy screen ---------- */
 $('curNGN').onclick = () => { cur = 'NGN'; renderPacks(); };
 $('curUSD').onclick = () => { cur = 'USD'; renderPacks(); };
 
@@ -355,7 +379,7 @@ function renderPacks() {
   $('curNGN').className = cur === 'NGN' ? '' : 'alt';
   $('curUSD').className = cur === 'USD' ? '' : 'alt';
   $('packs').innerHTML = PACKS.map(p => `
-    <div class="card pack">
+    <div class="card plain pack">
       <span>${p.label}</span>
       <button type="button" onclick="buy('${p.id}')">${cur === 'NGN' ? '₦' + p.ngn.toLocaleString() : '$' + p.usd.toFixed(2)}</button>
     </div>`).join('');
@@ -363,6 +387,7 @@ function renderPacks() {
 
 window.buy = async packId => {
   step('buy tapped: ' + packId + ' ' + cur);
+  if (!user) { say('payMsg', 'Sign in to buy coins.'); return; }
   say('payMsg', 'Preparing payment...');
   if (typeof FlutterwaveCheckout !== 'function') {
     step('Flutterwave script not loaded');
@@ -378,12 +403,11 @@ window.buy = async packId => {
     const p = await r.json().catch(() => ({}));
     if (!r.ok) {
       step('create-payment ' + r.status + ': ' + (p.error || 'failed'));
-      say('payMsg', p.error || 'Could not start payment (' + r.status + ').');
+      say('payMsg', p.error || 'Could not start payment (' + r.status + '). See Account → Activity log.');
       return;
     }
     step('create-payment ok, tx_ref ' + p.tx_ref);
     say('payMsg', '');
-
     FlutterwaveCheckout({
       public_key: FLW_PUBLIC,
       tx_ref: p.tx_ref,
@@ -409,7 +433,7 @@ window.buy = async packId => {
           step('verify error: ' + err.message);
           say('payMsg', 'Could not confirm payment: ' + err.message);
         }
-        loadBalance();
+        await loadBalance();
       },
       onclose: () => { step('payment window closed'); say('payMsg', ''); },
     });
@@ -420,6 +444,10 @@ window.buy = async packId => {
 };
 
 step('page loaded');
+hideSplashLater();
+function hideSplashLater() {
+  setTimeout(() => { const s = $('splash'); s.style.opacity = 0; setTimeout(() => s.classList.add('hidden'), 400); }, 900);
+}
 </script>
 </body>
 </html>
