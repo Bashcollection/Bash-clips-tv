@@ -319,7 +319,9 @@ async function loadCatalog() {
     return `<div class="card"><strong>${esc(e.series.title)}</strong> · Episode ${e.episode_number}${e.is_free ? '<span class="badge-free">Free</span>' : ''}
       ${url
         ? `<video controls playsinline src="${esc(url)}"></video>`
-        : `<p>Locked</p><button type="button" onclick="unlock('${e.id}')">Unlock for ${e.coin_cost} coins</button>`}
+        : e.is_free
+          ? `<p>Video unavailable. Check the video link in the database.</p>`
+          : `<p>Locked</p><button type="button" onclick="unlock('${e.id}')">Unlock for ${e.coin_cost} coins</button>`}
     </div>`;
   }).join('') || '<p>No episodes yet.</p>';
 }
