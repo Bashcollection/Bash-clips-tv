@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bash Clips TV</title>
+<link rel="icon" href="logo.webp">
+<style>
+  :root{
+    --surface:#1E293B; --surface-glass:rgba(30,41,59,.8);
+    --border:rgba(51,65,85,.6); --border-hi:rgba(148,163,184,.18);
+    --blue:#3B82F6; --indigo:#4F46E5; --sky:#60A5FA;
+    --emerald-soft:#34D399;
+    --text:#FFFFFF; --text-2:#CBD5E1; --muted:#94A3B8;
+    color-scheme: dark;
+    --sunray: repeating-conic-gradient(from 0deg at 50% 28%, rgba(255,255,255,.05) 0deg 3deg, transparent 3deg 12deg, rgba(96,165,250,.07) 12deg 15deg, transparent 15deg 24deg),
+      linear-gradient(115deg, transparent 35%, rgba(255,255,255,.08) 48%, transparent 60%),
+      radial-gradient(60% 45% at 50% 28%, rgba(59,130,246,.38), transparent 70%),
+      radial-gradient(50% 40% at 88% 82%, rgba(239,68,68,.26), transparent 70%),
+      linear-gradient(170deg, #111B33 0%, #0F172A 55%, #0B1222 100%);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; color:var(--text);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+    background:var(--sunray); background-attachment:fixed;
+  }
+
+  #splash{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--sunray);transition:opacity .4s;z-index:9}
+  .boot{display:flex;flex-direction:column;align-items:center;gap:22px}
+  .loader{width:170px;height:4px;border-radius:999px;background:rgba(51,65,85,.6);overflow:hidden}
+  .loader i{display:block;width:40%;height:100%;border-radius:999px;background:linear-gradient(90deg,#3B82F6,#818CF8,#3B82F6);animation:slide 1.2s ease-in-out infinite}
+  @keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+  #splash img{width:200px;max-width:60vw;filter:drop-shadow(0 0 28px rgba(59,130,246,.45));animation:float 3s ease-in-out infinite}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+  .hidden{display:none!important}
+  main{max-width:520px;margin:0 auto;padding:20px}
+
+  input{
+    font:inherit; width:100%; padding:12px 14px; margin:6px 0; border-radius:12px;
+    color:var(--text); background:rgba(15,23,42,.7);
+    border:1px solid rgba(71,85,105,.6);
+    box-shadow:inset 0 2px 6px rgba(0,0,0,.45);
+  }
+  input::placeholder{color:var(--muted)}
+  input:focus{outline:none;border-color:var(--blue);box-shadow:inset 0 2px 6px rgba(0,0,0,.45),0 0 0 3px rgba(59,130,246,.25)}
+
+  button{
+    font:inherit; font-weight:600; width:100%; padding:12px 16px; margin:6px 0;
+    border-radius:12px; border:0; cursor:pointer; color:#fff;
+    background:linear-gradient(135deg,#3B82F6 0%,#2563EB 45%,#4F46E5 100%);
+    box-shadow:0 10px 22px -10px rgba(59,130,246,.75), inset 0 1px 0 rgba(255,255,255,.35), inset 0 -2px 0 rgba(0,0,0,.25);
+    transition:transform .12s ease, filter .2s ease;
+  }
+  button:hover{filter:brightness(1.08)}
+  button:active{transform:translateY(1px) scale(.99)}
+  button:disabled{opacity:.6;cursor:default}
+  button.alt{
+    color:var(--text-2);
+    background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.02)),var(--surface);
+    border:1px solid var(--border); border-top-color:var(--border-hi);
+    box-shadow:0 8px 18px -12px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+
+  .card{
+    border-radius:18px; padding:16px; margin:12px 0;
+    background:linear-gradient(145deg,rgba(255,255,255,.09) 0%,rgba(255,255,255,.015) 45%,rgba(255,255,255,0) 100%),var(--surface-glass);
+    border:1px solid var(--border); border-top-color:var(--border-hi);
+    box-shadow:0 18px 40px -20px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.07);
+    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  }
+
+  .topbar{
+    position:sticky; top:0; z-index:5; margin:-20px -20px 12px; padding:14px 20px;
+    background:linear-gradient(180deg,rgba(30,41,59,.85),rgba(15,23,42,.7));
+    border-bottom:1px solid var(--border);
+    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+  }
+  .brand-title{
+    font-weight:800; letter-spacing:-.01em;
+    background:linear-gradient(90deg,#FFFFFF 0%,#93C5FD 50%,#818CF8 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .badge-free{
+    display:inline-block; margin-left:8px; padding:3px 10px; border-radius:999px;
+    font-size:.75rem; font-weight:600; color:var(--emerald-soft);
+    background:rgba(16,185,129,.14); border:1px solid rgba(16,185,129,.35);
+  }
+  h3{margin:0 0 10px; color:var(--text)}
+  p{color:var(--text-2)}
+
+  .row{display:flex; gap:8px; align-items:center}
+  .row>*{flex:1}
+  .pack{display:flex; justify-content:space-between; align-items:center; padding:12px 14px}
+  .pack span{color:var(--text-2)}
+  .pack button{width:auto; flex:none; margin:0; padding:10px 16px}
+
+  video{width:100%; margin-top:10px; border-radius:14px; display:block; border:1px solid var(--border)}
+
+  .msg{min-height:1.3em; color:var(--sky); font-size:.9em; margin-top:6px}
+
+  /* On-screen status log: shows each step so you can read it on your phone. */
+  #status{
+    margin-top:16px; padding:10px 12px; border-radius:12px; font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:.72rem; line-height:1.5; color:#93C5FD; background:rgba(2,6,23,.75);
+    border:1px solid var(--border); max-height:180px; overflow:auto; white-space:pre-wrap;
+  }
+
+  @media (prefers-reduced-motion: reduce){ #splash img, .loader i{animation:none} }
+</style>
+</head>
+<body>
+<div id="splash"><div class="boot"><img src="logo.webp" alt="Bash Clips TV"><div class="loader"><i></i></div></div></div>
+
+<main>
+  <section id="auth" class="hidden">
+    <img src="logo.webp" alt="Bash Clips TV" style="width:160px;display:block;margin:0 auto">
+    <div class="row">
+      <button type="button" id="tabIn">Sign in</button>
+      <button type="button" id="tabUp" class="alt">Sign up (+50 coins)</button>
+    </div>
+    <button type="button" id="google" class="alt">Continue with Google</button>
+    <input id="email" type="email" placeholder="Email" autocomplete="username">
+    <input id="pass" type="password" placeholder="Password" autocomplete="current-password">
+    <button type="button" id="authGo">Sign in</button>
+    <button type="button" id="guest" class="alt">Continue browsing as guest</button>
+    <div class="msg" id="authMsg"></div>
+  </section>
+
+  <section id="app" class="hidden">
+    <div class="topbar row"><strong class="brand-title">Bash Clips TV</strong><span id="bal" style="text-align:right"></span></div>
+    <div class="row" style="margin:12px 0">
+      <button type="button" id="navCat">Watch</button>
+      <button type="button" id="navWallet" class="alt">Coins</button>
+      <button type="button" id="signOut" class="alt">Sign out</button>
+    </div>
+    <div id="catalog"></div>
+    <div class="msg" id="catalogMsg"></div>
+
+    <div id="wallet" class="hidden card">
+      <h3>Coin wallet</h3>
+      <div class="row">
+        <button type="button" id="curNGN">Naira (₦)</button>
+        <button type="button" id="curUSD" class="alt">USD ($)</button>
+      </div>
+      <div id="packs"></div>
+      <div class="msg" id="payMsg"></div>
+    </div>
+  </section>
+
+  <div id="status"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://checkout.flutterwave.com/v3.js"></script>
+<script>
+const SB_URL = 'https://wmoquxhnaoxeukoxfjod.supabase.co';
+const SB_KEY = 'sb_publishable_OO9rGuagJDlgwynMUKrNmw_dOXok8Rz';
+const FLW_PUBLIC = 'FLWPUBK-52f32e15b02edeba097cfad41e73a8f3-X';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+// Display only. The server holds the real prices and coin amounts.
+const PACKS = [
+  { id: 'p100',  label: '100 coins',         ngn: 1500,  usd: 1.15  },
+  { id: 'p300',  label: '300 + 20 bonus',    ngn: 4000,  usd: 3.00  },
+  { id: 'p700',  label: '700 + 100 bonus',   ngn: 8500,  usd: 6.50  },
+  { id: 'p1500', label: '1,500 + 350 bonus', ngn: 17000, usd: 12.75 },
+];
+
+const $ = id => document.getElementById(id);
+const show = (id, on) => $(id).classList.toggle('hidden', !on);
+const say = (id, text) => { $(id).textContent = text; };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const time = () => new Date().toLocaleTimeString();
+
+// Visible step log. Each line is one step, so a failure shows exactly where it stopped.
+function step(text) {
+  console.log(text);
+  const s = $('status');
+  s.textContent += time() + '  ' + text + '\n';
+  s.scrollTop = s.scrollHeight;
+}
+
+let mode = 'in', cur = 'NGN', user = null, token = null;
+let shownFor = null;
+let fallbackTimer = null;
+let busy = false;
+
+/* ---------- Screens ---------- */
+function hideSplash() {
+  $('splash').style.opacity = 0;
+  setTimeout(() => $('splash').classList.add('hidden'), 400);
+}
+function showSignIn(message) {
+  show('app', false);
+  show('auth', true);
+  say('authMsg', message || '');
+}
+async function showApp() {
+  show('auth', false);
+  show('app', true);
+  show('wallet', false);
+  await Promise.all([loadCatalog(), loadBalance()]);
+}
+
+/* ---------- Single router: every sign-in path ends here ---------- */
+async function route(session) {
+  clearTimeout(fallbackTimer);
+  fallbackTimer = null;
+
+  if (!session?.user) {
+    user = null; token = null; shownFor = null;
+    step('route: no session, showing sign-in');
+    hideSplash();
+    showSignIn();
+    return;
+  }
+
+  user = session.user;
+  token = session.access_token;
+  if (shownFor === user.id) return;   // duplicate event for the same user
+  shownFor = user.id;
+
+  step('route: signed in as ' + user.email + ', loading app');
+  try {
+    await showApp();
+    step('route: app shown');
+  } catch (err) {
+    step('route ERROR: ' + err.message);
+    showSignIn('Could not load the app: ' + err.message);
+  }
+  hideSplash();
+}
+
+/* ---------- Session events from Supabase ---------- */
+sb.auth.onAuthStateChange((event, session) => {
+  step('auth event: ' + event + (session?.user ? ' (session)' : ' (no session)'));
+  if (event === 'SIGNED_OUT') { route(null); return; }
+  if (session?.user) { route(session); return; }
+  // No session yet: give a Google or magic-link return a moment before showing sign-in.
+  if (!fallbackTimer && !user) {
+    fallbackTimer = setTimeout(() => { fallbackTimer = null; if (!user) route(null); }, 2500);
+  }
+});
+
+/* ---------- Sign-in / sign-up form ---------- */
+function setMode(next) {
+  mode = next;
+  $('tabIn').className = mode === 'in' ? '' : 'alt';
+  $('tabUp').className = mode === 'up' ? '' : 'alt';
+  $('authGo').textContent = mode === 'in' ? 'Sign in' : 'Create account (+50 coins)';
+  $('pass').autocomplete = mode === 'in' ? 'current-password' : 'new-password';
+  say('authMsg', mode === 'up' ? 'Sign up gives you 50 coins.' : '');
+}
+$('tabIn').onclick = () => setMode('in');
+$('tabUp').onclick = () => setMode('up');
+setMode('in');
+
+$('authGo').onclick = async () => {
+  if (busy) return;
+  const email = $('email').value.trim();
+  const password = $('pass').value;
+  step((mode === 'in' ? 'sign-in' : 'sign-up') + ' tapped for ' + (email || '(no email)'));
+  if (!email || !password) { say('authMsg', 'Enter your email and password.'); return; }
+  if (mode === 'up' && password.length < 6) { say('authMsg', 'Password must be at least 6 characters.'); return; }
+
+  busy = true;
+  $('authGo').disabled = true;
+  say('authMsg', mode === 'in' ? 'Signing in...' : 'Creating your account...');
+  try {
+    const r = mode === 'in'
+      ? await sb.auth.signInWithPassword({ email, password })
+      : await sb.auth.signUp({ email, password });
+    if (r.error) {
+      step('auth error: ' + r.error.message);
+      say('authMsg', r.error.message);
+      return;
+    }
+    step('auth ok, session: ' + (r.data.session ? 'yes' : 'no'));
+    if (r.data.session) { await route(r.data.session); return; }
+    say('authMsg', 'Check your email to confirm, then sign in.');
+  } catch (err) {
+    step('auth exception: ' + err.message);
+    say('authMsg', 'Something went wrong: ' + err.message);
+  } finally {
+    busy = false;
+    $('authGo').disabled = false;
+  }
+};
+
+$('google').onclick = () => sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin } });
+$('guest').onclick = () => { step('guest browsing'); show('auth', false); show('app', true); loadCatalog(); };
+$('signOut').onclick = async () => {
+  step('sign-out tapped');
+  const { error } = await sb.auth.signOut();
+  if (error) step('sign-out error: ' + error.message);
+  route(null);
+};
+
+/* ---------- Navigation ---------- */
+$('navCat').onclick = () => show('wallet', false);
+$('navWallet').onclick = () => {
+  if (!user) { say('catalogMsg', 'Sign in to buy coins.'); return; }
+  show('wallet', true);
+  renderPacks();
+};
+
+/* ---------- Catalog ---------- */
+async function loadCatalog() {
+  const { data, error } = await sb.from('episodes')
+    .select('id, episode_number, is_free, series:series_id(title, genre), episode_videos(video_url)')
+    .order('episode_number');
+  if (error) { step('catalog error: ' + error.message); say('catalogMsg', error.message); return; }
+  step('catalog loaded: ' + data.length + ' episodes');
+  // RLS returns episode_videos only for free or unlocked episodes, so no URL means locked.
+  $('catalog').innerHTML = data.map(e => {
+    const url = e.episode_videos?.[0]?.video_url;
+    return `<div class="card"><strong>${esc(e.series.title)}</strong> · Episode ${e.episode_number}${e.is_free ? '<span class="badge-free">Free</span>' : ''}
+      ${url
+        ? `<video controls playsinline src="${esc(url)}"></video>`
+        : `<p>Locked</p><button type="button" onclick="unlock('${e.id}')">Unlock for 12 coins</button>`}
+    </div>`;
+  }).join('') || '<p>No episodes yet.</p>';
+}
+
+window.unlock = async episodeId => {
+  if (!user) { say('catalogMsg', 'Sign in to unlock episodes.'); return; }
+  step('unlock tapped for ' + episodeId);
+  const { error } = await sb.rpc('unlock_episode', { p_episode_id: episodeId });
+  if (error) {
+    step('unlock error: ' + error.message);
+    say('catalogMsg', error.message.includes('not enough coins') ? 'Not enough coins. Buy more under Coins.' : error.message);
+    return;
+  }
+  say('catalogMsg', 'Unlocked.');
+  await loadCatalog();
+  loadBalance();
+};
+
+async function loadBalance() {
+  if (!user) { $('bal').textContent = ''; return; }
+  const { data, error } = await sb.from('profiles').select('coin_balance').eq('id', user.id).single();
+  if (error) step('balance error: ' + error.message);
+  $('bal').textContent = (data?.coin_balance ?? 0) + ' coins';
+}
+
+/* ---------- Wallet and payment ---------- */
+$('curNGN').onclick = () => { cur = 'NGN'; renderPacks(); };
+$('curUSD').onclick = () => { cur = 'USD'; renderPacks(); };
+
+function renderPacks() {
+  $('curNGN').className = cur === 'NGN' ? '' : 'alt';
+  $('curUSD').className = cur === 'USD' ? '' : 'alt';
+  $('packs').innerHTML = PACKS.map(p => `
+    <div class="card pack">
+      <span>${p.label}</span>
+      <button type="button" onclick="buy('${p.id}')">${cur === 'NGN' ? '₦' + p.ngn.toLocaleString() : '$' + p.usd.toFixed(2)}</button>
+    </div>`).join('');
+}
+
+window.buy = async packId => {
+  step('buy tapped: ' + packId + ' ' + cur);
+  say('payMsg', 'Preparing payment...');
+  if (typeof FlutterwaveCheckout !== 'function') {
+    step('Flutterwave script not loaded');
+    say('payMsg', 'Payment window could not load. Check your connection and refresh.');
+    return;
+  }
+  try {
+    const r = await fetch('/api/create-payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify({ packId, currency: cur }),
+    });
+    const p = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      step('create-payment ' + r.status + ': ' + (p.error || 'failed'));
+      say('payMsg', p.error || 'Could not start payment (' + r.status + ').');
+      return;
+    }
+    step('create-payment ok, tx_ref ' + p.tx_ref);
+    say('payMsg', '');
+
+    FlutterwaveCheckout({
+      public_key: FLW_PUBLIC,
+      tx_ref: p.tx_ref,
+      amount: p.amount,
+      currency: p.currency,
+      payment_options: cur === 'NGN' ? 'banktransfer,card,ussd' : 'card',
+      customer: { email: user.email },
+      customizations: { title: 'Bash Clips TV', description: 'Coin pack' },
+      callback: async res => {
+        step('flutterwave status: ' + res.status);
+        if (res.status !== 'successful') { say('payMsg', 'Payment not completed.'); return; }
+        say('payMsg', 'Confirming payment...');
+        try {
+          const v = await fetch('/api/verify-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            body: JSON.stringify({ transaction_id: res.transaction_id, tx_ref: p.tx_ref }),
+          });
+          const j = await v.json().catch(() => ({}));
+          step('verify-payment ' + v.status + ': ' + JSON.stringify(j));
+          say('payMsg', v.ok ? (j.already ? 'Already credited.' : `+${j.credited} coins added.`) : (j.error || 'Could not confirm payment.'));
+        } catch (err) {
+          step('verify error: ' + err.message);
+          say('payMsg', 'Could not confirm payment: ' + err.message);
+        }
+        loadBalance();
+      },
+      onclose: () => { step('payment window closed'); say('payMsg', ''); },
+    });
+  } catch (err) {
+    step('buy error: ' + err.message);
+    say('payMsg', 'Payment failed to start: ' + err.message);
+  }
+};
+
+step('page loaded');
+</script>
+</body>
+</html>
