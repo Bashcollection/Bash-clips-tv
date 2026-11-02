@@ -309,7 +309,7 @@ $('navWallet').onclick = () => {
 /* ---------- Catalog ---------- */
 async function loadCatalog() {
   const { data, error } = await sb.from('episodes')
-    .select('id, episode_number, is_free, series:series_id(title, genre), episode_videos(video_url)')
+    .select('id, episode_number, is_free, coin_cost, series:series_id(title, genre), episode_videos(video_url)')
     .order('episode_number');
   if (error) { step('catalog error: ' + error.message); say('catalogMsg', error.message); return; }
   step('catalog loaded: ' + data.length + ' episodes');
@@ -319,7 +319,7 @@ async function loadCatalog() {
     return `<div class="card"><strong>${esc(e.series.title)}</strong> · Episode ${e.episode_number}${e.is_free ? '<span class="badge-free">Free</span>' : ''}
       ${url
         ? `<video controls playsinline src="${esc(url)}"></video>`
-        : `<p>Locked</p><button type="button" onclick="unlock('${e.id}')">Unlock for 12 coins</button>`}
+        : `<p>Locked</p><button type="button" onclick="unlock('${e.id}')">Unlock for ${e.coin_cost} coins</button>`}
     </div>`;
   }).join('') || '<p>No episodes yet.</p>';
 }
