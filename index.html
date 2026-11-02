@@ -158,8 +158,8 @@
       <button type="button" class="alt" id="signOut">Sign out</button>
     </div>
     <div class="card plain">
-      <h2>Activity log</h2>
-      <div class="log" id="log"></div>
+      <h2>Need help?</h2>
+      <p>If a payment or sign-in does not work, close the app, reopen it, and try again. If it still fails, contact support and include the time you tried.</p>
     </div>
   </section>
 </div>
@@ -197,8 +197,6 @@ function step(text) {
   console.log(line);
   activity.push(line);
   if (activity.length > 200) activity.shift();
-  $('log').textContent = activity.join('\n');
-  $('log').scrollTop = $('log').scrollHeight;
 }
 
 /* ---------- Screen switching ---------- */
@@ -284,7 +282,7 @@ $('authGo').onclick = async () => {
     if (r.error) { step('auth error: ' + r.error.message); say('authMsg', r.error.message); return; }
     step('auth ok, session: ' + (r.data.session ? 'yes' : 'no'));
     if (r.data.session) { await route(r.data.session); return; }
-    say('authMsg', 'Check your email to confirm, then sign in. (To skip this, turn off Confirm email in Supabase.)');
+    say('authMsg', 'Please check your email to confirm your account, then sign in.');
   } catch (err) {
     step('auth exception: ' + err.message);
     say('authMsg', 'Something went wrong: ' + err.message);
@@ -403,7 +401,7 @@ window.buy = async packId => {
     const p = await r.json().catch(() => ({}));
     if (!r.ok) {
       step('create-payment ' + r.status + ': ' + (p.error || 'failed'));
-      say('payMsg', p.error || 'Could not start payment (' + r.status + '). See Account → Activity log.');
+      say('payMsg', 'Payment could not start. Please try again in a few minutes.');
       return;
     }
     step('create-payment ok, tx_ref ' + p.tx_ref);
