@@ -400,8 +400,8 @@ window.buy = async packId => {
     });
     const p = await r.json().catch(() => ({}));
     if (!r.ok) {
-      step('create-payment ' + r.status + ': ' + (p.error || 'failed'));
-      say('payMsg', 'Payment could not start. Please try again in a few minutes.');
+      step('create-payment ' + r.status + ' at ' + (p.step || 'unknown step') + ': ' + (p.error || 'no details returned'));
+      say('payMsg', p.error ? p.error : 'Payment service did not respond (' + r.status + '). Please try again in a few minutes.');
       return;
     }
     step('create-payment ok, tx_ref ' + p.tx_ref);
