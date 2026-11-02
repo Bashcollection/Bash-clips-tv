@@ -63,6 +63,7 @@
   button:hover{filter:brightness(1.08)}
   button:active{transform:translateY(1px) scale(.99)}
   button:focus-visible{outline:2px solid var(--sky);outline-offset:3px}
+  button:disabled{opacity:.6;cursor:default}
 
   /* Secondary: dark glass with a bevel */
   button.alt{
@@ -125,7 +126,6 @@
     box-shadow:0 24px 40px -22px rgba(0,0,0,.9);
   }
 
-  #dbg{position:fixed;left:0;right:0;bottom:0;max-height:28vh;overflow:auto;margin:0;padding:6px 8px;background:rgba(0,0,0,.85);color:#9fe8ff;font:11px/1.4 monospace;white-space:pre-wrap;z-index:99}
   .msg{min-height:1.3em; color:var(--sky); font-size:.9em; margin-top:6px}
   p{color:var(--text-2)}
 
@@ -138,21 +138,24 @@
 <main>
   <section id="auth" class="hidden">
     <img src="logo.webp" alt="Bash Clips TV" style="width:160px;display:block;margin:0 auto">
-    <div class="row"><button id="tabIn">Sign in</button><button id="tabUp" class="alt">Sign up (+50 coins)</button></div>
-    <button id="google" class="alt">Continue with Google</button>
-    <input id="email" type="email" placeholder="Email">
-    <input id="pass" type="password" placeholder="Password">
-    <button id="authGo">Sign in</button>
-    <button id="guest" class="alt">Continue browsing as guest</button>
+    <div class="row">
+      <button type="button" id="tabIn">Sign in</button>
+      <button type="button" id="tabUp" class="alt">Sign up (+50 coins)</button>
+    </div>
+    <button type="button" id="google" class="alt">Continue with Google</button>
+    <input id="email" type="email" placeholder="Email" autocomplete="email">
+    <input id="pass" type="password" placeholder="Password" autocomplete="current-password">
+    <button type="button" id="authGo">Sign in</button>
+    <button type="button" id="guest" class="alt">Continue browsing as guest</button>
     <div class="msg" id="authMsg"></div>
   </section>
 
   <section id="app" class="hidden">
     <div class="topbar row"><img src="logo.webp" alt="" style="width:40px;flex:none"><strong class="brand-title">Bash Clips TV</strong><span id="bal" style="text-align:right"></span></div>
     <div class="row" style="margin:12px 0">
-      <button id="navCat">Watch</button>
-      <button id="navWallet" class="alt">Coins</button>
-      <button id="signOut" class="alt">Sign out</button>
+      <button type="button" id="navCat">Watch</button>
+      <button type="button" id="navWallet" class="alt">Coins</button>
+      <button type="button" id="signOut" class="alt">Sign out</button>
     </div>
     <div id="catalog"></div>
     <div class="msg" id="catalogMsg"></div>
@@ -160,8 +163,8 @@
     <div id="wallet" class="hidden card">
       <h3>Coin wallet</h3>
       <div class="row">
-        <button id="curNGN">Naira (₦)</button>
-        <button id="curUSD" class="alt">USD ($)</button>
+        <button type="button" id="curNGN">Naira (₦)</button>
+        <button type="button" id="curUSD" class="alt">USD ($)</button>
       </div>
       <div id="packs"></div>
       <div class="msg" id="payMsg"></div>
@@ -169,7 +172,6 @@
   </section>
 </main>
 
-<pre id="dbg"></pre>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 <script>
@@ -190,13 +192,12 @@ const $ = id => document.getElementById(id);
 const show = (id, on) => $(id).classList.toggle('hidden', !on);
 const say = (id, text) => { $(id).textContent = text; };
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
-const dbg = m => { const p = document.getElementById('dbg'); p.textContent += new Date().toLocaleTimeString() + '  ' + m + '\n'; p.scrollTop = p.scrollHeight; };
+const dbg = m => console.log(new Date().toLocaleTimeString() + '  ' + m);
 
-let mode = 'in', cur = 'NGN', user = null, token = null, guest = false;
+let mode = 'in', cur = 'NGN', user = null, token = null;
 
 /* ---------- Boot: logo in the middle while the app loads ---------- */
 const BOOT_MIN_MS = 1500;
-let booted = false;
 function showSplash() {
   const s = $('splash');
   s.classList.remove('hidden');
@@ -215,13 +216,13 @@ async function enter() {
 }
 // Runs on first load and again after each sign-in: logo in the middle, then the app.
 async function bootApp(session) {
-  dbg('boot: ' + (session?.user ? 'signed in' : 'no user') + ', showing logo');
+  dbg('boot: ' + (session?.user ? 'signed in' : 'no user'));
   user = session?.user || null;
   token = session?.access_token || null;
   showSplash();
   const start = Date.now();
   try {
-    if (user) { await enter(); dbg('app shown'); } else { show('auth', true); dbg('sign-in shown'); }
+    if (user) { await enter(); } else { show('app', false); show('auth', true); }
   } catch (err) {
     dbg('ERROR: ' + err.message);
     show('auth', true);
@@ -251,23 +252,51 @@ sb.auth.onAuthStateChange((event, session) => {
   }
   // No session yet: wait before showing sign-in, so a late sign-in can still take over.
   if (!currentId && !authTimer) {
-    authTimer = setTimeout(() => { authTimer = null; dbg('no session after 3s'); if (!currentId) bootApp(null); }, 3000);
+    authTimer = setTimeout(() => { authTimer = null; if (!currentId) bootApp(null); }, 3000);
   }
 });
 
-/* ---------- Sign-in ---------- */
-$('tabIn').onclick = () => { mode = 'in'; say('authMsg', ''); };
-$('tabUp').onclick = () => { mode = 'up'; say('authMsg', 'Sign up gives you 50 coins.'); };
+/* ---------- Sign-in / sign-up ---------- */
+// Switches the form between sign-in and sign-up, and updates the labels so the change is visible.
+function setMode(next) {
+  mode = next;
+  $('tabIn').className = mode === 'in' ? '' : 'alt';
+  $('tabUp').className = mode === 'up' ? '' : 'alt';
+  $('authGo').textContent = mode === 'in' ? 'Sign in' : 'Create account (+50 coins)';
+  $('pass').autocomplete = mode === 'in' ? 'current-password' : 'new-password';
+  say('authMsg', mode === 'up' ? 'Sign up gives you 50 coins.' : '');
+}
+$('tabIn').onclick = () => setMode('in');
+$('tabUp').onclick = () => setMode('up');
+setMode('in');
+
 $('authGo').onclick = async () => {
-  const email = $('email').value.trim(), password = $('pass').value;
-  const r = mode === 'in'
-    ? await sb.auth.signInWithPassword({ email, password })
-    : await sb.auth.signUp({ email, password });
-  if (r.error) say('authMsg', r.error.message);
-  else if (mode === 'up' && !r.data.session) say('authMsg', 'Check your email to confirm, then sign in.');
+  const btn = $('authGo');
+  const email = $('email').value.trim();
+  const password = $('pass').value;
+  if (!email || !password) { say('authMsg', 'Enter your email and password.'); return; }
+  if (mode === 'up' && password.length < 6) { say('authMsg', 'Password must be at least 6 characters.'); return; }
+
+  btn.disabled = true;
+  say('authMsg', mode === 'in' ? 'Signing in...' : 'Creating your account...');
+  try {
+    const r = mode === 'in'
+      ? await sb.auth.signInWithPassword({ email, password })
+      : await sb.auth.signUp({ email, password });
+    dbg(mode === 'in' ? 'sign-in result' : 'sign-up result: ' + (r.data?.session ? 'session' : 'no session'));
+    if (r.error) say('authMsg', r.error.message);
+    else if (mode === 'up' && !r.data.session) say('authMsg', 'Check your email to confirm, then sign in.');
+    // On success with a session, onAuthStateChange takes over and shows the app.
+  } catch (err) {
+    dbg('auth error: ' + err.message);
+    say('authMsg', 'Something went wrong: ' + err.message);
+  } finally {
+    btn.disabled = false;
+  }
 };
+
 $('google').onclick = () => sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin } });
-$('guest').onclick = () => { guest = true; enter(); };
+$('guest').onclick = () => { enter(); };
 $('signOut').onclick = async () => { await sb.auth.signOut(); location.reload(); };
 
 /* ---------- Navigation ---------- */
@@ -290,7 +319,7 @@ async function loadCatalog() {
     return `<div class="card"><strong class="ep-title">${esc(e.series.title)}</strong> · Episode ${e.episode_number}${e.is_free ? '<span class="badge-free">Free</span>' : ''}
       ${url
         ? `<video controls playsinline src="${esc(url)}"></video>`
-        : `<p>Locked</p><button onclick="unlock('${e.id}')">Unlock for 12 coins</button>`}
+        : `<p>Locked</p><button type="button" onclick="unlock('${e.id}')">Unlock for 12 coins</button>`}
     </div>`;
   }).join('') || '<p>No episodes yet.</p>';
 }
@@ -322,42 +351,57 @@ function renderPacks() {
   $('packs').innerHTML = PACKS.map(p => `
     <div class="card pack">
       <span>${p.label}</span>
-      <button onclick="buy('${p.id}')">${cur === 'NGN' ? '₦' + p.ngn.toLocaleString() : '$' + p.usd.toFixed(2)}</button>
+      <button type="button" onclick="buy('${p.id}')">${cur === 'NGN' ? '₦' + p.ngn.toLocaleString() : '$' + p.usd.toFixed(2)}</button>
     </div>`).join('');
 }
 
 window.buy = async packId => {
   say('payMsg', 'Preparing payment...');
-  const r = await fetch('/api/create-payment', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-    body: JSON.stringify({ packId, currency: cur }),
-  });
-  const p = await r.json();
-  if (!r.ok) { say('payMsg', p.error); return; }
+  if (typeof FlutterwaveCheckout !== 'function') {
+    say('payMsg', 'Payment window could not load. Check your connection and refresh.');
+    return;
+  }
+  try {
+    const r = await fetch('/api/create-payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify({ packId, currency: cur }),
+    });
+    const p = await r.json();
+    if (!r.ok) { say('payMsg', p.error || 'Could not start payment.'); return; }
 
-  FlutterwaveCheckout({
-    public_key: FLW_PUBLIC,
-    tx_ref: p.tx_ref,
-    amount: p.amount,
-    currency: p.currency,
-    // Naira: bank transfer, card and USSD. Dollars: card only.
-    payment_options: cur === 'NGN' ? 'banktransfer,card,ussd' : 'card',
-    customer: { email: user.email },
-    customizations: { title: 'Bash Clips TV', description: 'Coin pack' },
-    callback: async res => {
-      if (res.status !== 'successful') { say('payMsg', 'Payment not completed.'); return; }
-      say('payMsg', 'Confirming payment...');
-      const v = await fetch('/api/verify-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-        body: JSON.stringify({ transaction_id: res.transaction_id, tx_ref: p.tx_ref }),
-      });
-      const j = await v.json();
-      say('payMsg', v.ok ? (j.already ? 'Already credited.' : `+${j.credited} coins added.`) : j.error);
-      loadBalance();
-    },
-  });
+    say('payMsg', '');
+    FlutterwaveCheckout({
+      public_key: FLW_PUBLIC,
+      tx_ref: p.tx_ref,
+      amount: p.amount,
+      currency: p.currency,
+      // Naira: bank transfer, card and USSD. Dollars: card only.
+      payment_options: cur === 'NGN' ? 'banktransfer,card,ussd' : 'card',
+      customer: { email: user.email },
+      customizations: { title: 'Bash Clips TV', description: 'Coin pack' },
+      callback: async res => {
+        if (res.status !== 'successful') { say('payMsg', 'Payment not completed.'); return; }
+        say('payMsg', 'Confirming payment...');
+        try {
+          const v = await fetch('/api/verify-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            body: JSON.stringify({ transaction_id: res.transaction_id, tx_ref: p.tx_ref }),
+          });
+          const j = await v.json();
+          say('payMsg', v.ok ? (j.already ? 'Already credited.' : `+${j.credited} coins added.`) : (j.error || 'Could not confirm payment.'));
+        } catch (err) {
+          say('payMsg', 'Could not confirm payment: ' + err.message);
+        }
+        loadBalance();
+      },
+      onclose: () => { say('payMsg', ''); },
+    });
+  } catch (err) {
+    dbg('payment error: ' + err.message);
+    say('payMsg', 'Payment failed to start: ' + err.message);
+  }
 };
 </script>
 </body>
