@@ -64,6 +64,7 @@ export default async function handler(req, res) {
         user_id: userId,
         tx_ref: txRef,
         amount_paid: amount,
+        coins_credited: pack.coins,
         status: 'pending',
       }),
     });
@@ -82,4 +83,4 @@ export default async function handler(req, res) {
     coins: pack.coins,
     email: userEmail,
   });
-                  }
+                                             }
