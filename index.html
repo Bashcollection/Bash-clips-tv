@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Bash Clips TV</title>
 <link rel="icon" href="logo.webp">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/plyr@3.7.8/dist/plyr.css">
 <style>
   :root{
     --surface:#1E293B; --surface-glass:rgba(30,41,59,.82);
@@ -86,6 +87,10 @@
   #player.full{height:min(70vh,600px);width:min(calc(min(70vh,600px) * 9 / 16),100%)}
   #player.mini{position:fixed;right:12px;bottom:12px;width:150px;height:300px;margin:0;z-index:30;box-shadow:0 14px 30px -10px rgba(0,0,0,.95)}
   #pv{flex:1 1 auto;min-height:0;width:100%;object-fit:contain;background:#000;display:block}
+  #player .plyr{flex:1 1 auto;min-height:0;height:100%;width:100%}
+  #player .plyr__video-wrapper,#player .plyr video{height:100%}
+  #player .plyr video{object-fit:contain}
+  #pX{z-index:50 !important}
   #pbar{flex:0 0 auto;display:flex;gap:6px;padding:8px;background:rgba(15,23,42,.95)}
   #ptitle{display:none}
   #pX{position:absolute;top:8px;right:8px;z-index:2;width:34px;height:34px;margin:0;padding:0;border-radius:50%;
@@ -193,6 +198,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://checkout.flutterwave.com/v3.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/plyr@3.7.8/dist/plyr.polyfilled.js"></script>
 <script>
 const SB_URL = 'https://wmoquxhnaoxeukoxfjod.supabase.co';
 const SB_KEY = 'sb_publishable_OO9rGuagJDlgwynMUKrNmw_dOXok8Rz';
@@ -229,15 +235,27 @@ function step(text) {
 /* ---------- Shared player ---------- */
 let playerMode = 'none';   // 'none' | 'full' | 'mini'
 const pv = $('pv');
+const player = (typeof Plyr !== 'undefined') ? new Plyr(pv, {
+  controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'settings', 'fullscreen'],
+  settings: ['speed'],
+  speed: { selected: 1, options: [0.5, 1, 1.25, 1.5, 2] },
+}) : null;
+pv.addEventListener('error', () => {
+  step('video failed to load');
+  say('epMsg', 'This video could not play. Please try again later.');
+});
+function loadVideo(url) {
+  if (player) player.source = { type: 'video', sources: [{ src: url, type: 'video/mp4' }] };
+  else { pv.src = url; pv.load(); }
+}
 function applyPlayer() {
   const onEpisode = !$('scr-episode').classList.contains('hidden');
   const cls = playerMode === 'none' ? 'hidden' : ((playerMode === 'full' && onEpisode) ? 'full' : 'mini');
   $('player').className = cls;
 }
 function stopPlayer() {
-  pv.pause();
-  pv.removeAttribute('src');
-  pv.load();
+  if (player) player.pause();
+  else { pv.pause(); pv.removeAttribute('src'); pv.load(); }
   pv.removeAttribute('data-src');
   playerMode = 'none';
   applyPlayer();
@@ -404,7 +422,7 @@ window.openEpisode = async id => {
 
   if (url) {
     if (pv.getAttribute('data-src') !== url) {
-      pv.src = url;
+      loadVideo(url);
       pv.setAttribute('data-src', url);
     }
     $('ptitle').textContent = `${e.series.title} · Episode ${e.episode_number}`;
