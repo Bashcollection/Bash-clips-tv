@@ -81,6 +81,19 @@
   .log{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.72rem;line-height:1.5;color:#93C5FD;background:rgba(2,6,23,.75);
     border:1px solid var(--border);border-radius:12px;padding:10px 12px;max-height:320px;overflow:auto;white-space:pre-wrap}
   .back{width:auto;margin:0 0 10px;padding:8px 14px;font-size:.9rem}
+  #player{position:relative;margin:0 auto 12px;background:#000;border-radius:14px;overflow:hidden;
+    box-shadow:0 18px 40px -18px rgba(0,0,0,.9);border:1px solid var(--border)}
+  #player.full{height:min(62vh,560px);aspect-ratio:9/16;width:auto;max-width:100%}
+  #player.mini{position:fixed;right:12px;bottom:12px;width:132px;z-index:30;margin:0;aspect-ratio:9/16;box-shadow:0 14px 30px -10px rgba(0,0,0,.95)}
+  #player video{width:100%;height:100%;object-fit:contain;display:block;background:#000}
+  #player.mini video{height:auto;aspect-ratio:9/16}
+  #pbar{display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:rgba(15,23,42,.92)}
+  #player.mini #pbar{flex-direction:column;padding:6px}
+  #player.full #ptitle,#player.mini #pFull,#player.mini #pMin{display:none}
+  #player:not(.mini) #pOpen{display:none}
+  #player.mini #ptitle{font-size:.7rem;color:var(--text-2);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .pbtn{width:auto;flex:1;margin:0;padding:8px 10px;font-size:.8rem;border-radius:10px}
+  #player.full .pbtn{flex:1 1 30%}
 </style>
 </head>
 <body>
@@ -112,6 +125,18 @@
     <button type="button" id="tCoins" class="alt">Coins</button>
     <button type="button" id="tAccount" class="alt">Account</button>
   </nav>
+
+  <!-- Shared video player: full size on the episode screen, small box when minimized -->
+  <div id="player" class="hidden">
+    <video id="pv" controls playsinline></video>
+    <div id="pbar">
+      <div id="ptitle"></div>
+      <button type="button" class="pbtn" id="pFull">Full screen</button>
+      <button type="button" class="pbtn alt" id="pMin">Minimize</button>
+      <button type="button" class="pbtn alt" id="pOpen">Open</button>
+      <button type="button" class="pbtn alt" id="pClose">Close</button>
+    </div>
+  </div>
 
   <!-- Watch: episode list -->
   <section id="scr-watch">
@@ -199,6 +224,30 @@ function step(text) {
   if (activity.length > 200) activity.shift();
 }
 
+/* ---------- Shared player ---------- */
+let playerMode = 'none';   // 'none' | 'full' | 'mini'
+const pv = $('pv');
+function applyPlayer() {
+  const onEpisode = !$('scr-episode').classList.contains('hidden');
+  const cls = playerMode === 'none' ? 'hidden' : ((playerMode === 'full' && onEpisode) ? 'full' : 'mini');
+  $('player').className = cls;
+}
+function stopPlayer() {
+  pv.pause();
+  pv.removeAttribute('src');
+  pv.load();
+  pv.removeAttribute('data-src');
+  playerMode = 'none';
+  applyPlayer();
+}
+$('pMin').onclick = () => { playerMode = 'mini'; go('scr-watch'); };
+$('pOpen').onclick = () => { if (currentEp) openEpisode(currentEp.id); };
+$('pClose').onclick = () => stopPlayer();
+$('pFull').onclick = () => {
+  const fn = pv.requestFullscreen || pv.webkitEnterFullscreen;
+  if (fn) fn.call(pv); else step('Full screen is not supported on this browser.');
+};
+
 /* ---------- Screen switching ---------- */
 const SCREENS = ['scr-auth','scr-watch','scr-episode','scr-coins','scr-buy','scr-account'];
 function go(name) {
@@ -206,6 +255,7 @@ function go(name) {
   const inShell = name !== 'scr-auth';
   $('shell').classList.toggle('hidden', !inShell);
   document.querySelectorAll('.tabs button').forEach(b => b.className = b.id === tabFor(name) ? '' : 'alt');
+  applyPlayer();
   window.scrollTo(0, 0);
 }
 function tabFor(screen) {
@@ -336,9 +386,7 @@ window.openEpisode = async id => {
   say('epMsg', '');
   const title = `${esc(e.series.title)} · Episode ${e.episode_number}`;
 
-  // First try: the video link came back with the episode list.
   let url = e.episode_videos?.[0]?.video_url;
-  // Second try: ask the database for this episode's video directly.
   if (!url) {
     const { data, error } = await sb.from('episode_videos').select('video_url').eq('episode_id', e.id).limit(1);
     if (error) step('video lookup error: ' + error.message);
@@ -346,19 +394,26 @@ window.openEpisode = async id => {
   }
 
   if (url) {
-    $('epCard').innerHTML = `<h2>${title}</h2>
-      <p class="muted">${e.is_free ? 'Free episode' : 'Unlocked'}</p>
-      <video controls playsinline src="${esc(url)}"></video>`;
-  } else if (e.is_free) {
-    step('no video link returned for free episode ' + e.episode_number);
-    $('epCard').innerHTML = `<h2>${title}</h2>
-      <p>We could not load this episode's video. Please try again in a few minutes.</p>`;
+    if (pv.getAttribute('data-src') !== url) {
+      pv.src = url;
+      pv.setAttribute('data-src', url);
+    }
+    $('ptitle').textContent = `${e.series.title} · Episode ${e.episode_number}`;
+    $('epCard').innerHTML = `<h2>${title}</h2><p class="muted">${e.is_free ? 'Free episode' : 'Unlocked'}</p>`;
+    playerMode = 'full';
   } else {
-    $('epCard').innerHTML = `<h2>${title}</h2>
-      <p>Locked. Unlock this episode for ${e.coin_cost} coins.</p>
-      <p class="muted">Your balance: ${balance} coins</p>
-      <button type="button" id="unlockBtn">Unlock for ${e.coin_cost} coins</button>`;
-    $('unlockBtn').onclick = () => unlock(e.id);
+    stopPlayer();
+    if (e.is_free) {
+      step('no video link returned for free episode ' + e.episode_number);
+      $('epCard').innerHTML = `<h2>${title}</h2>
+        <p>We could not load this episode's video. Please try again in a few minutes.</p>`;
+    } else {
+      $('epCard').innerHTML = `<h2>${title}</h2>
+        <p>Locked. Unlock this episode for ${e.coin_cost} coins.</p>
+        <p class="muted">Your balance: ${balance} coins</p>
+        <button type="button" id="unlockBtn">Unlock for ${e.coin_cost} coins</button>`;
+      $('unlockBtn').onclick = () => unlock(e.id);
+    }
   }
   go('scr-episode');
 };
