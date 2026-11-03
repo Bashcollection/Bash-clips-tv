@@ -329,17 +329,30 @@ async function loadCatalog() {
 }
 
 /* ---------- Episode screen: player or unlock ---------- */
-window.openEpisode = id => {
+window.openEpisode = async id => {
   const e = episodes.find(x => x.id === id);
   if (!e) return;
   currentEp = e;
-  const url = e.episode_videos?.[0]?.video_url;
-  const title = `${esc(e.series.title)} · Episode ${e.episode_number}`;
   say('epMsg', '');
+  const title = `${esc(e.series.title)} · Episode ${e.episode_number}`;
+
+  // First try: the video link came back with the episode list.
+  let url = e.episode_videos?.[0]?.video_url;
+  // Second try: ask the database for this episode's video directly.
+  if (!url) {
+    const { data, error } = await sb.from('episode_videos').select('video_url').eq('episode_id', e.id).limit(1);
+    if (error) step('video lookup error: ' + error.message);
+    url = data?.[0]?.video_url;
+  }
+
   if (url) {
-    $('epCard').innerHTML = `<h2>${title}</h2><video controls playsinline src="${esc(url)}"></video>`;
+    $('epCard').innerHTML = `<h2>${title}</h2>
+      <p class="muted">${e.is_free ? 'Free episode' : 'Unlocked'}</p>
+      <video controls playsinline src="${esc(url)}"></video>`;
   } else if (e.is_free) {
-    $('epCard').innerHTML = `<h2>${title}</h2><p>This free episode has no video link yet. Check episode_videos in the database.</p>`;
+    step('no video link returned for free episode ' + e.episode_number);
+    $('epCard').innerHTML = `<h2>${title}</h2>
+      <p>We could not load this episode's video. Please try again in a few minutes.</p>`;
   } else {
     $('epCard').innerHTML = `<h2>${title}</h2>
       <p>Locked. Unlock this episode for ${e.coin_cost} coins.</p>
