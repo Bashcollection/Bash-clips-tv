@@ -91,6 +91,19 @@
   #player .plyr__video-wrapper,#player .plyr video{height:100%}
   #player .plyr video{object-fit:contain}
   #pX{z-index:50 !important}
+  .consent{display:flex;gap:10px;align-items:flex-start;margin:10px 4px;color:var(--text-2);font-size:.9rem;line-height:1.4}
+  .consent input{width:20px;height:20px;margin:2px 0 0;flex:0 0 20px;padding:0;box-shadow:none}
+  .legal-links{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;margin:8px 0 4px;font-size:.85rem}
+  .legal-links button{width:auto;margin:0;padding:0;background:none;box-shadow:none;color:var(--sky);font-weight:500;text-decoration:underline}
+  .doc{color:var(--text-2);line-height:1.55;font-size:.95rem}
+  .doc h3{margin:18px 0 6px;color:var(--text);font-size:1rem}
+  .doc p,.doc li{margin:6px 0}
+  .doc ul{padding-left:20px}
+  .docnav{display:flex;flex-wrap:wrap;gap:6px}
+  .docnav button{width:auto;flex:1 1 30%;margin:0;padding:8px 6px;font-size:.78rem}
+  .share-row{display:flex;flex-wrap:wrap;gap:6px}
+  .share-row button{width:auto;flex:1 1 30%;margin:0;padding:8px 6px;font-size:.8rem}
+  .linkbox{word-break:break-all;background:rgba(2,6,23,.6);border:1px solid var(--border);border-radius:10px;padding:10px;color:var(--text-2);font-size:.85rem;margin:8px 0}
   #pbar{flex:0 0 auto;display:flex;gap:6px;padding:8px;background:rgba(15,23,42,.95)}
   #ptitle{display:none}
   #pX{position:absolute;top:8px;right:8px;z-index:2;width:34px;height:34px;margin:0;padding:0;border-radius:50%;
@@ -115,9 +128,19 @@
   <button type="button" id="google" class="alt">Continue with Google</button>
   <input id="email" type="email" placeholder="Email" autocomplete="username">
   <input id="pass" type="password" placeholder="Password" autocomplete="current-password">
+  <div id="signupConsent" class="hidden">
+    <label class="consent"><input type="checkbox" id="chk18"> I confirm I am 18 years or older.</label>
+    <label class="consent"><input type="checkbox" id="chkTerms"> I have read and agree to the Terms &amp; Conditions, Privacy Policy and Refund Policy.</label>
+  </div>
   <button type="button" id="authGo">Sign in</button>
   <button type="button" id="guest" class="alt">Browse as guest</button>
   <div class="msg" id="authMsg"></div>
+  <div class="legal-links">
+    <button type="button" data-doc="terms" class="legalOpen">Terms</button>
+    <button type="button" data-doc="privacy" class="legalOpen">Privacy</button>
+    <button type="button" data-doc="refund" class="legalOpen">Refunds</button>
+    <button type="button" data-doc="parental" class="legalOpen">Parental guide</button>
+  </div>
 </main>
 
 <!-- Signed-in shell -->
@@ -183,11 +206,44 @@
   </section>
 
   <!-- Account: details, sign out, activity log -->
+  <!-- Legal and guides -->
+  <section id="scr-legal" class="hidden">
+    <button type="button" class="alt back" id="legalBack">← Back</button>
+    <div class="card plain">
+      <div class="docnav">
+        <button type="button" class="legalOpen" data-doc="terms">Terms</button>
+        <button type="button" class="legalOpen" data-doc="privacy">Privacy</button>
+        <button type="button" class="legalOpen" data-doc="refund">Refunds</button>
+        <button type="button" class="legalOpen" data-doc="guide">User guide</button>
+        <button type="button" class="legalOpen" data-doc="parental">Parental guide</button>
+      </div>
+    </div>
+    <div class="card plain doc" id="docBody"></div>
+  </section>
+
   <section id="scr-account" class="hidden">
     <div class="card plain">
       <p class="muted">Signed in as</p>
       <h2 id="acctEmail"></h2>
       <button type="button" class="alt" id="signOut">Sign out</button>
+    </div>
+    <div class="card plain">
+      <h2>Invite friends</h2>
+      <p class="muted">Share your personal link. Friends who sign up with it are linked to your account.</p>
+      <div class="linkbox" id="refLink">Loading your link...</div>
+      <button type="button" id="shareBtn">Share my link</button>
+      <div class="share-row" id="shareRow" style="margin-top:8px"></div>
+      <div class="msg" id="shareMsg"></div>
+    </div>
+    <div class="card plain">
+      <h2>Help and rules</h2>
+      <div class="docnav">
+        <button type="button" class="legalOpen" data-doc="guide">User guide</button>
+        <button type="button" class="legalOpen" data-doc="terms">Terms</button>
+        <button type="button" class="legalOpen" data-doc="privacy">Privacy</button>
+        <button type="button" class="legalOpen" data-doc="refund">Refunds</button>
+        <button type="button" class="legalOpen" data-doc="parental">Parental guide</button>
+      </div>
     </div>
     <div class="card plain">
       <h2>Need help?</h2>
@@ -218,6 +274,136 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', 
 const say = (id, t) => { $(id).textContent = t; };
 
 let mode = 'in', cur = 'NGN', user = null, token = null, shownFor = null;
+let myRef = '';
+// Referral code from the link (?ref=CODE). Kept on this device until sign-up.
+const urlRef = new URLSearchParams(location.search).get('ref');
+if (urlRef) localStorage.setItem('bct_ref', urlRef.toUpperCase());
+const refForSignup = () => (localStorage.getItem('bct_ref') || '').toUpperCase();
+
+function maskEmail(e) {
+  if (!e) return '';
+  const [name, domain] = e.split('@');
+  return name.slice(0, 2) + '***@' + (domain || '');
+}
+
+const DOCS = {
+  terms: `
+    <h3>1. Who can use Bash Clips TV</h3>
+    <p>You must be 18 years or older. By creating an account you confirm this.</p>
+    <h3>2. Your account</h3>
+    <p>Keep your password private. You are responsible for activity on your account. Tell us at once if you think someone else is using it.</p>
+    <h3>3. Coins</h3>
+    <p>Coins are a digital credit used to unlock episodes inside the app. Coins have no cash value, cannot be sold or transferred, and are not a bank or money service.</p>
+    <h3>4. Content</h3>
+    <p>Episodes are for personal viewing only. Do not copy, record, re-upload or share episodes outside the app.</p>
+    <h3>5. Referrals</h3>
+    <p>When someone signs up with your personal link, you receive 50 coins and they receive 50 coins. Each new account counts once. Self-referrals and fake accounts are not allowed and will be removed without the coins. Do not use spam, fake accounts, misleading claims or paid advertising to promote your link. Self-referrals are not allowed. We may remove referrals that break these rules.</p>
+    <h3>6. Acceptable use</h3>
+    <p>Do not attempt to access other accounts, break the service, scrape content, or use the app for unlawful purposes.</p>
+    <h3>7. Changes and ending access</h3>
+    <p>We may change the app, prices and these terms. We may suspend or close accounts that break these terms.</p>
+    <h3>8. Liability</h3>
+    <p>The service is provided as is. To the extent the law allows, we are not liable for indirect loss. Nothing here limits rights you have under Nigerian consumer law.</p>
+    <h3>9. Governing law</h3>
+    <p>These terms are governed by the laws of the Federal Republic of Nigeria.</p>
+    <h3>10. Contact</h3>
+    <p>[Company name], [support email], [address].</p>`,
+  privacy: `
+    <h3>What we collect</h3>
+    <ul><li>Account details: email address and name you provide.</li>
+    <li>Coin balance, unlocked episodes and purchase records (amount, date, status).</li>
+    <li>Basic app usage, such as errors, needed to keep the service working.</li></ul>
+    <h3>Payments</h3>
+    <p>Card and bank details are entered on Flutterwave's secure page. We do not store card numbers.</p>
+    <h3>How we use your information</h3>
+    <p>To run your account, deliver purchased coins, prevent fraud, support you, and meet legal duties.</p>
+    <h3>Sharing</h3>
+    <p>We share data only with service providers that run the app (hosting, database, payments), or when the law requires it. We do not sell personal data.</p>
+    <h3>Your rights</h3>
+    <p>Under the Nigeria Data Protection Act 2023 you can ask to see, correct or delete your personal data. Contact us to make a request.</p>
+    <h3>Children</h3>
+    <p>The app is for adults only. We do not knowingly collect data from anyone under 18.</p>
+    <h3>Security</h3>
+    <p>We use encryption in transit and access controls. No system is perfectly secure.</p>
+    <h3>Contact</h3>
+    <p>[Company name], [privacy email].</p>`,
+  refund: `
+    <h3>Coins are digital</h3>
+    <p>Coins are delivered to your account as soon as your payment is confirmed. Because they are digital and used at once, refunds are limited as set out below.</p>
+    <h3>When you can get a refund</h3>
+    <ul><li>You were charged but your coins were not added, and we cannot fix it within 7 days.</li>
+    <li>You were charged twice for the same pack.</li>
+    <li>A technical fault on our side stopped you using paid content.</li></ul>
+    <h3>When you cannot get a refund</h3>
+    <ul><li>Coins you have already used to unlock episodes.</li>
+    <li>Changing your mind after coins are added and used.</li></ul>
+    <h3>How to ask</h3>
+    <p>Email [support email] within 7 days of the payment, with your registered email and the date and amount paid. Approved refunds go back to the original payment method, and any coins not used are removed.</p>
+    <h3>Your rights</h3>
+    <p>These rules do not affect rights you have under Nigerian consumer law.</p>`,
+  guide: `
+    <h3>Sign up and sign in</h3>
+    <p>Tap Sign up, enter your email and a password of at least 6 characters, tick the two boxes, and tap Create account. You receive 50 coins to start.</p>
+    <h3>Watch episodes</h3>
+    <p>Open Watch and tap an episode. Free episodes play straight away. Locked episodes show the coin price first.</p>
+    <h3>Unlock an episode</h3>
+    <p>Tap Unlock on the episode. The coin price is taken from your balance and the episode stays unlocked on your account.</p>
+    <h3>Buy coins</h3>
+    <p>Tap your coin balance at the top. Choose Naira or USD, pick a pack, and pay on the secure Flutterwave page.</p>
+    <h3>Player</h3>
+    <p>Use Full screen to fill the screen. Turn your phone sideways for landscape. Minimize keeps the video small in the corner while you browse. Close stops it.</p>
+    <h3>Invite friends</h3>
+    <p>Open Account and tap Share my link. When a friend signs up with your link, you receive 50 coins and they receive 50 coins.</p>`,
+  parental: `
+    <h3>Adults only</h3>
+    <p>Bash Clips TV contains adult drama. It is for people aged 18 and over. Do not create an account for a child.</p>
+    <h3>For parents and guardians</h3>
+    <ul><li>Keep devices and passwords away from children.</li>
+    <li>Use your phone's own parental controls and app-store restrictions.</li>
+    <li>Sign out on shared devices, using Account, then Sign out.</li>
+    <li>Do not store payment cards on a device children can use.</li></ul>
+    <h3>If a minor uses the app</h3>
+    <p>Email [support email] with the account email. We will close the account and remove the data we hold, as the law requires.</p>
+    <h3>Reporting</h3>
+    <p>To report content that may involve minors or abuse, email [safety email] right away.</p>`,
+};
+
+function openLegal(key) {
+  $('docBody').innerHTML = DOCS[key] || DOCS.terms;
+  if (user) {
+    $('shell').classList.remove('hidden');
+    go('scr-legal');
+  } else {
+    $('shell').classList.remove('hidden');
+    go('scr-legal');
+  }
+}
+document.querySelectorAll('.legalOpen').forEach(b => b.onclick = () => openLegal(b.dataset.doc));
+$('legalBack').onclick = () => (user ? go('scr-account') : go('scr-auth'));
+
+// Share: native share sheet where available, otherwise copy and social buttons.
+function shareUrl() { return `${location.origin}/?ref=${myRef}`; }
+function renderRef() {
+  $('refLink').textContent = myRef ? shareUrl() : 'Your link will appear here after sign-in.';
+}
+$('shareBtn').onclick = async () => {
+  if (!myRef) { say('shareMsg', 'Your link is not ready yet. Try again in a moment.'); return; }
+  const url = shareUrl();
+  const text = 'Join me on Bash Clips TV.';
+  if (navigator.share) {
+    try { await navigator.share({ title: 'Bash Clips TV', text, url }); say('shareMsg', 'Thanks for sharing.'); return; }
+    catch (err) { /* cancelled: fall through to the buttons */ }
+  }
+  const t = encodeURIComponent(text + ' ' + url);
+  const u = encodeURIComponent(url);
+  $('shareRow').innerHTML = `
+    <button type="button" onclick="window.open('https://wa.me/?text=${t}','_blank')">WhatsApp</button>
+    <button type="button" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=${u}','_blank')">Facebook</button>
+    <button type="button" onclick="window.open('https://twitter.com/intent/tweet?text=${t}','_blank')">X</button>
+    <button type="button" onclick="window.open('https://t.me/share/url?url=${u}&text=${encodeURIComponent(text)}','_blank')">Telegram</button>
+    <button type="button" class="alt" onclick="navigator.clipboard.writeText('${url}').then(()=>say('shareMsg','Link copied.'))">Copy link</button>`;
+  say('shareMsg', 'Choose where to share.');
+};
 let fallbackTimer = null;
 let episodes = [];
 let balance = 0;
@@ -276,7 +462,7 @@ $('pFull').onclick = async () => {
 $('pX').onclick = () => stopPlayer();
 
 /* ---------- Screen switching ---------- */
-const SCREENS = ['scr-auth','scr-watch','scr-episode','scr-coins','scr-buy','scr-account'];
+const SCREENS = ['scr-auth','scr-watch','scr-episode','scr-coins','scr-buy','scr-account','scr-legal'];
 function go(name) {
   SCREENS.forEach(s => $(s)?.classList.toggle('hidden', s !== name));
   const inShell = name !== 'scr-auth';
@@ -287,14 +473,16 @@ function go(name) {
 }
 function tabFor(screen) {
   if (screen === 'scr-coins' || screen === 'scr-buy') return 'tCoins';
-  if (screen === 'scr-account') return 'tAccount';
+  if (screen === 'scr-account' || screen === 'scr-legal') return 'tAccount';
   return 'tWatch';
 }
 
 /* ---------- Balance ---------- */
 async function loadBalance() {
   if (!user) return;
-  const { data, error } = await sb.from('profiles').select('coin_balance').eq('id', user.id).single();
+  const { data, error } = await sb.from('profiles').select('coin_balance, referral_code').eq('id', user.id).single();
+  myRef = data?.referral_code || '';
+  renderRef();
   if (error) { step('balance error: ' + error.message); return; }
   balance = data?.coin_balance ?? 0;
   $('balChip').textContent = balance + ' coins';
@@ -315,7 +503,7 @@ async function route(session) {
   if (shownFor === user.id) return;
   shownFor = user.id;
   step('signed in as ' + user.email);
-  $('acctEmail').textContent = user.email;
+  $('acctEmail').textContent = maskEmail(user.email);
   await loadCatalog();
   await loadBalance();
   go('scr-watch');
@@ -336,6 +524,7 @@ function setMode(next) {
   $('tabIn').className = mode === 'in' ? '' : 'alt';
   $('tabUp').className = mode === 'up' ? '' : 'alt';
   $('authGo').textContent = mode === 'in' ? 'Sign in' : 'Create account (+50 coins)';
+  setSignupConsentVisible();
   say('authMsg', mode === 'up' ? 'Sign up gives you 50 coins.' : '');
 }
 $('tabIn').onclick = () => setMode('in');
@@ -343,19 +532,27 @@ $('tabUp').onclick = () => setMode('up');
 setMode('in');
 
 let busy = false;
+function setSignupConsentVisible() { $('signupConsent').classList.toggle('hidden', mode !== 'up'); }
 $('authGo').onclick = async () => {
   if (busy) return;
   const email = $('email').value.trim();
   const password = $('pass').value;
   if (!email || !password) { say('authMsg', 'Enter your email and password.'); return; }
   if (mode === 'up' && password.length < 6) { say('authMsg', 'Password must be at least 6 characters.'); return; }
+  if (mode === 'up' && (!$('chk18').checked || !$('chkTerms').checked)) {
+    say('authMsg', 'Please confirm you are 18 or older and accept the Terms & Conditions to create an account.');
+    return;
+  }
   busy = true; $('authGo').disabled = true;
   step((mode === 'in' ? 'sign-in' : 'sign-up') + ' for ' + email);
   say('authMsg', mode === 'in' ? 'Signing in...' : 'Creating your account...');
   try {
     const r = mode === 'in'
       ? await sb.auth.signInWithPassword({ email, password })
-      : await sb.auth.signUp({ email, password });
+      : await sb.auth.signUp({
+          email, password,
+          options: { data: { ref: refForSignup() || null, over18: true, terms_accepted: true, terms_version: '2026-11' } },
+        });
     if (r.error) { step('auth error: ' + r.error.message); say('authMsg', r.error.message); return; }
     step('auth ok, session: ' + (r.data.session ? 'yes' : 'no'));
     if (r.data.session) { await route(r.data.session); return; }
