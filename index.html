@@ -113,39 +113,7 @@
   #player.mini #pFull,#player.mini #pMin{display:none}
   #player:not(.mini) #pOpen{display:none}
   #player.mini #ptitle{display:none}
-  /* ---- Africa United page ---- */
-  .afr{font-family:Georgia,"Times New Roman",serif;color:#F8F5EC}
-  .afr-hero{position:relative;overflow:hidden;border-radius:20px;padding:26px 22px;margin:12px 0;
-    background:linear-gradient(135deg,#0B1F3A 0%,#13305A 60%,#0B1F3A 100%);border:1px solid rgba(201,162,39,.4)}
-  .afr-hero::before{content:"";position:absolute;inset:0;opacity:.08;pointer-events:none;
-    background:repeating-linear-gradient(45deg,#C9A227 0 2px,transparent 2px 14px),repeating-linear-gradient(-45deg,#1F7A4D 0 2px,transparent 2px 14px)}
-  .afr-kicker{font-family:system-ui,-apple-system,sans-serif;font-size:.75rem;letter-spacing:.18em;color:#C9A227;text-transform:uppercase}
-  .afr h1{font-size:1.7rem;line-height:1.2;margin:8px 0 6px;font-weight:700}
-  .afr-tag{color:#C9A227;font-style:italic;margin:0 0 12px}
-  .afr p{line-height:1.6;color:#E6E1D3;margin:8px 0}
-  .afr h2{font-size:1.25rem;margin:0 0 8px;color:#F8F5EC}
-  .afr-section{border-top:1px solid rgba(201,162,39,.3);padding:20px 4px 4px;margin-top:18px}
-  .afr-grid{display:grid;gap:12px;grid-template-columns:1fr}
-  @media (min-width:640px){.afr-grid{grid-template-columns:1fr 1fr}}
-  .afr-card{border-radius:16px;padding:16px;background:linear-gradient(160deg,rgba(19,48,90,.9),rgba(11,31,58,.95));
-    border:1px solid rgba(201,162,39,.25);transition:transform .2s ease,border-color .2s ease}
-  .afr-card:hover{transform:translateY(-2px);border-color:rgba(201,162,39,.6)}
-  .afr-card h3{margin:0 0 6px;font-size:1.02rem;color:#C9A227}
-  .afr-card p{font-size:.92rem;margin:0}
-  .afr-cta{display:flex;flex-direction:column;gap:8px;margin-top:14px}
-  .afr-cta button{font-family:system-ui,-apple-system,sans-serif;margin:0;background:linear-gradient(135deg,#C9A227,#A8841A);color:#0B1F3A;box-shadow:0 10px 22px -12px rgba(201,162,39,.8)}
-  .afr-cta button.alt{background:transparent;color:#F8F5EC;border:1px solid rgba(201,162,39,.5);box-shadow:none}
-  .afr-flag{font-size:1.6rem;margin-right:8px;vertical-align:middle}
-  .afr details{background:rgba(11,31,58,.6);border:1px solid rgba(201,162,39,.25);border-radius:14px;padding:12px 14px}
-  .afr summary{cursor:pointer;color:#C9A227;font-family:system-ui,-apple-system,sans-serif;font-weight:600}
-  .afr .soon{display:inline-block;font-family:system-ui,-apple-system,sans-serif;font-size:.72rem;padding:3px 9px;border-radius:999px;
-    background:rgba(31,122,77,.25);border:1px solid rgba(31,122,77,.6);color:#BFE8D2}
-  .afr .disclaimer{font-size:.8rem;color:#A9B4C6;border-top:1px solid rgba(201,162,39,.2);padding-top:12px;margin-top:20px}
-  .afr-steps{counter-reset:s;list-style:none;padding:0;margin:8px 0}
-  .afr-steps li{counter-increment:s;padding:10px 0 10px 40px;position:relative;color:#E6E1D3;border-bottom:1px dashed rgba(201,162,39,.2)}
-  .afr-steps li::before{content:counter(s);position:absolute;left:0;top:9px;width:26px;height:26px;border-radius:50%;
-    background:#1F7A4D;color:#fff;text-align:center;line-height:26px;font-family:system-ui,-apple-system,sans-serif;font-size:.85rem}
-  @media (prefers-reduced-motion: reduce){ .afr-card{transition:none} }
+</style>
 </head>
 <body>
 <div id="splash"><img src="logo.webp" alt="Bash Clips TV"></div>
@@ -172,7 +140,6 @@
     <button type="button" data-doc="privacy" class="legalOpen">Privacy</button>
     <button type="button" data-doc="refund" class="legalOpen">Refunds</button>
     <button type="button" data-doc="parental" class="legalOpen">Parental guide</button>
-    <button type="button" id="afrOpenAuth">🌍 Africa United</button>
   </div>
 </main>
 
@@ -186,7 +153,6 @@
     <button type="button" id="tWatch">Watch</button>
     <button type="button" id="tCoins" class="alt">Coins</button>
     <button type="button" id="tAccount" class="alt">Account</button>
-    <button type="button" id="tAfrica" class="alt">🌍 Africa United</button>
   </nav>
 
   <!-- Shared video player: full size on the episode screen, small box when minimized -->
@@ -253,70 +219,6 @@
       </div>
     </div>
     <div class="card plain doc" id="docBody"></div>
-  </section>
-
-  <!-- Africa United – Beyond Borders -->
-  <section id="scr-africa" class="hidden afr">
-    <div class="afr-hero">
-      <div class="afr-kicker">Independent initiative</div>
-      <h1>AFRICA UNITED – BEYOND BORDERS</h1>
-      <p class="afr-tag">One People. Many Cultures. One Future.</p>
-      <p>Africa United – Beyond Borders is an independent initiative connecting young Africans through cultural exchange, creative expression, digital storytelling, youth development and international collaboration.</p>
-      <p>Our goal is to build bridges across African countries, celebrate our diversity and create opportunities for young people to work together.</p>
-      <div class="afr-cta">
-        <button type="button" data-scroll="afr-about">Discover Africa United</button>
-        <button type="button" class="alt" data-scroll="afr-programmes">Explore Our Programmes</button>
-        <button type="button" class="alt" data-tab="tWatch">Watch Our Stories</button>
-      </div>
-    </div>
-
-    <div class="afr-section" id="afr-about">
-      <h2>About</h2>
-      <p><strong>Vision.</strong> A connected Africa where young people move freely in ideas, culture and opportunity.</p>
-      <p><strong>Mission.</strong> To create cross-border platforms for youth creativity, cultural exchange and digital storytelling.</p>
-      <p><strong>Values.</strong> Unity, respect for diversity, creativity, integrity and shared responsibility.</p>
-      <p class="muted" style="color:#C9A227">Founder &amp; Executive Director</p>
-    </div>
-
-    <div class="afr-section" id="afr-programmes">
-      <h2>Featured programmes</h2>
-      <div class="afr-grid">
-        <div class="afr-card"><h3>A. Cross-Border Youth Showcase</h3><p>A platform for young people to showcase their talents, cultures, creativity and achievements across African borders.</p></div>
-        <div class="afr-card"><h3>B. Our Culture, Our Story</h3><p>Celebrating African traditions, languages, music, fashion, arts, heritage and cultural identity.</p></div>
-        <div class="afr-card"><h3>C. African Digital Cinema</h3><p>Using film, animation, digital storytelling and creative media to share African stories with wider audiences.</p></div>
-        <div class="afr-card"><h3>D. Beyond Borders Youth Exchange</h3><p>Encouraging collaboration, friendship, cultural understanding and learning between young people from different African countries.</p></div>
-      </div>
-    </div>
-
-    <div class="afr-section" id="afr-countries">
-      <h2>Participating countries</h2>
-      <details open>
-        <summary>Countries (<span id="afrCount">3</span>)</summary>
-        <div id="afrCountries" style="margin-top:10px"></div>
-        <p class="muted" style="color:#A9B4C6;font-size:.85rem">More countries will be listed here as they join.</p>
-      </details>
-    </div>
-
-    <div class="afr-section" id="afr-festival">
-      <h2>THE AFRICA UNITED INTERNATIONAL FESTIVAL</h2>
-      <p>A celebration of African unity, creativity, culture and youth collaboration, bringing people together beyond national borders.</p>
-      <ol class="afr-steps">
-        <li>Digital launch.</li>
-        <li>Online cultural and creative showcases.</li>
-        <li>Physical international festival.</li>
-      </ol>
-      <p><span class="soon">Announcements coming soon</span></p>
-    </div>
-
-    <div class="afr-section" id="afr-bct">
-      <h2>Powered by Creativity. Connected Through Stories.</h2>
-      <p>Bash Clips TV is the official media and production partner of Africa United – Beyond Borders.</p>
-      <div class="afr-cta">
-        <button type="button" data-tab="tWatch">Go to Bash Clips TV</button>
-      </div>
-    </div>
-
-    <p class="disclaimer">Africa United – Beyond Borders is an independent initiative. Bash Clips TV is its media and production partner. No government or institution has endorsed this initiative. No event dates, venues or guests are confirmed yet.</p>
   </section>
 
   <section id="scr-account" class="hidden">
@@ -466,31 +368,6 @@ const DOCS = {
     <p>To report content that may involve minors or abuse, email [safety email] right away.</p>`,
 };
 
-// Africa United: a navigation page with working links.
-const COUNTRIES = [
-  { name: 'Nigeria', flag: '🇳🇬' },
-  { name: 'Niger Republic', flag: '🇳🇪' },
-  { name: 'Burkina Faso', flag: '🇧🇫' },
-];
-function renderCountries() {
-  $('afrCountries').innerHTML = COUNTRIES.map(c =>
-    `<div class="afr-card" style="margin-bottom:8px"><span class="afr-flag">${c.flag}</span><strong>${esc(c.name)}</strong></div>`
-  ).join('');
-  $('afrCount').textContent = COUNTRIES.length;
-}
-function openAfrica() {
-  renderCountries();
-  $('shell').classList.remove('hidden');
-  go('scr-africa');
-}
-$('tAfrica').onclick = () => openAfrica();
-$('afrOpenAuth').onclick = () => openAfrica();
-document.querySelectorAll('#scr-africa [data-scroll]').forEach(b => b.onclick = () => {
-  const el = $(b.dataset.scroll);
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-});
-document.querySelectorAll('#scr-africa [data-tab]').forEach(b => b.onclick = () => $(b.dataset.tab).click());
-
 function openLegal(key) {
   $('docBody').innerHTML = DOCS[key] || DOCS.terms;
   if (user) {
@@ -585,7 +462,7 @@ $('pFull').onclick = async () => {
 $('pX').onclick = () => stopPlayer();
 
 /* ---------- Screen switching ---------- */
-const SCREENS = ['scr-auth','scr-watch','scr-episode','scr-coins','scr-buy','scr-account','scr-legal','scr-africa'];
+const SCREENS = ['scr-auth','scr-watch','scr-episode','scr-coins','scr-buy','scr-account','scr-legal'];
 function go(name) {
   SCREENS.forEach(s => $(s)?.classList.toggle('hidden', s !== name));
   const inShell = name !== 'scr-auth';
@@ -597,7 +474,6 @@ function go(name) {
 function tabFor(screen) {
   if (screen === 'scr-coins' || screen === 'scr-buy') return 'tCoins';
   if (screen === 'scr-account' || screen === 'scr-legal') return 'tAccount';
-  if (screen === 'scr-africa') return 'tAfrica';
   return 'tWatch';
 }
 
