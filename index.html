@@ -186,6 +186,7 @@
     <button type="button" id="tWatch">Watch</button>
     <button type="button" id="tCoins" class="alt">Coins</button>
     <button type="button" id="tAccount" class="alt">Account</button>
+    <button type="button" id="tAfrica" class="alt">🌍 Africa United</button>
   </nav>
 
   <!-- Shared video player: full size on the episode screen, small box when minimized -->
@@ -594,6 +595,7 @@ function go(name) {
 function tabFor(screen) {
   if (screen === 'scr-coins' || screen === 'scr-buy') return 'tCoins';
   if (screen === 'scr-account' || screen === 'scr-legal') return 'tAccount';
+  if (screen === 'scr-africa') return 'tAfrica';
   return 'tWatch';
 }
 
@@ -853,6 +855,7 @@ window.buy = async packId => {
   }
 };
 
+$('tAfrica').onclick = () => openAfrica();
 step('page loaded');
 if (new URLSearchParams(location.search).get('page') === 'africa') {
   setTimeout(() => openAfrica(), 3000);
