@@ -146,6 +146,12 @@
   .afr-steps li::before{content:counter(s);position:absolute;left:0;top:9px;width:26px;height:26px;border-radius:50%;
     background:#1F7A4D;color:#fff;text-align:center;line-height:26px;font-family:system-ui,-apple-system,sans-serif;font-size:.85rem}
   @media (prefers-reduced-motion: reduce){ .afr-card{transition:none} }
+  .tabs button{min-width:0;padding:10px 4px;font-size:.8rem;line-height:1.25}
+  .afr-card.clickable{cursor:pointer}
+  .afr-card .join{display:block;margin-top:6px;color:#C9A227;font-size:.85rem;font-family:system-ui,-apple-system,sans-serif}
+  .joinform label{display:block;margin:12px 0 2px;color:var(--text-2);font-size:.9rem}
+  .joinform .chk{display:flex;gap:10px;align-items:flex-start;margin:8px 0;color:var(--text-2);font-size:.9rem}
+  .joinform .chk input{width:20px;height:20px;flex:0 0 20px;margin:2px 0 0;padding:0;box-shadow:none}
 </style>
 </head>
 <body>
@@ -173,6 +179,7 @@
     <button type="button" data-doc="privacy" class="legalOpen">Privacy</button>
     <button type="button" data-doc="refund" class="legalOpen">Refunds</button>
     <button type="button" data-doc="parental" class="legalOpen">Parental guide</button>
+    <button type="button" id="afrOpenAuth">🌍 Africa United</button>
   </div>
 </main>
 
@@ -317,6 +324,17 @@
     </div>
 
     <p class="disclaimer">Africa United – Beyond Borders is an independent initiative. Bash Clips TV is its media and production partner. No government or institution has endorsed this initiative. No event dates, venues or guests are confirmed yet.</p>
+  </section>
+
+  <!-- Africa United membership form -->
+  <section id="scr-join" class="hidden afr">
+    <button type="button" class="alt back" id="joinBack">← Back to Africa United</button>
+    <div class="afr-hero">
+      <div class="afr-kicker">Membership</div>
+      <h1 id="joinTitle"></h1>
+      <p id="joinIntro"></p>
+    </div>
+    <div class="card plain joinform" id="joinBody"></div>
   </section>
 
   <section id="scr-account" class="hidden">
@@ -468,16 +486,101 @@ const DOCS = {
 
 // Africa United: a navigation page with working links.
 const COUNTRIES = [
-  { name: 'Nigeria', flag: '🇳🇬' },
-  { name: 'Niger Republic', flag: '🇳🇪' },
-  { name: 'Burkina Faso', flag: '🇧🇫' },
+  { code: 'NG', name: 'Nigeria', flag: '🇳🇬' },
+  { code: 'NE', name: 'Niger Republic', flag: '🇳🇪' },
+  { code: 'BF', name: 'Burkina Faso', flag: '🇧🇫' },
+];
+const INTERESTS = [
+  'Cross-Border Youth Showcase',
+  'Our Culture, Our Story',
+  'African Digital Cinema',
+  'Beyond Borders Youth Exchange',
 ];
 function renderCountries() {
   $('afrCountries').innerHTML = COUNTRIES.map(c =>
-    `<div class="afr-card" style="margin-bottom:8px"><span class="afr-flag">${c.flag}</span><strong>${esc(c.name)}</strong></div>`
+    `<div class="afr-card clickable" role="button" tabindex="0" onclick="openJoin('${c.code}')">
+       <span class="afr-flag">${c.flag}</span><strong>${esc(c.name)}</strong>
+       <span class="join">Register as a member →</span>
+     </div>`
   ).join('');
   $('afrCount').textContent = COUNTRIES.length;
 }
+let currentJoin = null;
+function openJoin(code) {
+  const c = COUNTRIES.find(x => x.code === code);
+  if (!c) return;
+  currentJoin = c;
+  $('shell').classList.remove('hidden');
+  go('scr-join');
+  renderJoin();
+}
+async function renderJoin() {
+  const c = currentJoin;
+  $('joinTitle').textContent = `${c.flag} ${c.name}`;
+  $('joinIntro').textContent = 'Membership request for the Africa United movement. Membership benefits and programme details will be announced.';
+  if (!user) {
+    $('joinBody').innerHTML = `<p>Please sign in to register. Your membership request is linked to your account.</p>
+      <button type="button" id="joinSignIn">Sign in to register</button>`;
+    $('joinSignIn').onclick = () => go('scr-auth');
+    return;
+  }
+  const { data, error } = await sb.from('africa_members').select('id').eq('user_id', user.id).eq('country', c.code).maybeSingle();
+  if (error) {
+    step('membership check error: ' + error.message);
+    $('joinBody').innerHTML = `<p>We could not check your registration. Please try again later.</p>`;
+    return;
+  }
+  if (data) {
+    $('joinBody').innerHTML = `<p>You have already registered as a member for ${esc(c.name)}. Thank you.</p>`;
+    return;
+  }
+  $('joinBody').innerHTML = `
+    <label for="jName">Full name</label>
+    <input id="jName" type="text" autocomplete="name">
+    <label>Country</label>
+    <p style="margin:4px 0">${c.flag} ${esc(c.name)}</p>
+    <label for="jCity">City or state</label>
+    <input id="jCity" type="text">
+    <label for="jPhone">Phone (optional)</label>
+    <input id="jPhone" type="tel" autocomplete="tel">
+    <label>Areas you are interested in (optional)</label>
+    ${INTERESTS.map((t, i) => `<label class="chk"><input type="checkbox" class="jInt" value="${esc(t)}"> ${esc(t)}</label>`).join('')}
+    <label class="chk"><input type="checkbox" id="jUpdates"> Send me updates about Africa United.</label>
+    <label class="chk"><input type="checkbox" id="jJ18"> I confirm I am 18 years or older.</label>
+    <label class="chk"><input type="checkbox" id="jJTerms"> I agree to the Terms &amp; Conditions and Privacy Policy.</label>
+    <button type="button" id="jSubmit">Register as a member</button>
+    <div class="msg" id="jMsg"></div>`;
+  $('jSubmit').onclick = submitJoin;
+}
+async function submitJoin() {
+  const name = $('jName').value.trim();
+  if (!name) { say('jMsg', 'Please enter your full name.'); return; }
+  if (!$('jJ18').checked || !$('jJTerms').checked) {
+    say('jMsg', 'Please confirm you are 18 or older and accept the Terms and Privacy Policy.');
+    return;
+  }
+  const interests = [...document.querySelectorAll('.jInt:checked')].map(i => i.value);
+  $('jSubmit').disabled = true;
+  const { error } = await sb.from('africa_members').insert({
+    user_id: user.id,
+    country: currentJoin.code,
+    full_name: name,
+    city: $('jCity').value.trim() || null,
+    phone: $('jPhone').value.trim() || null,
+    interests,
+    updates_opt_in: $('jUpdates').checked,
+  });
+  $('jSubmit').disabled = false;
+  if (error) {
+    if (error.code === '23505') { say('jMsg', 'You have already registered for this country.'); return; }
+    step('membership error: ' + error.message);
+    say('jMsg', 'We could not save your registration. Please try again.');
+    return;
+  }
+  $('joinBody').innerHTML = `<p>Thank you, ${esc(name)}. Your membership request for ${esc(currentJoin.name)} has been recorded. Membership benefits and programme details will be announced.</p>`;
+}
+$('joinBack').onclick = () => go('scr-africa');
+$('afrOpenAuth').onclick = () => openAfrica();
 function openAfrica() {
   renderCountries();
   $('shell').classList.remove('hidden');
@@ -583,7 +686,7 @@ $('pFull').onclick = async () => {
 $('pX').onclick = () => stopPlayer();
 
 /* ---------- Screen switching ---------- */
-const SCREENS = ['scr-auth','scr-watch','scr-episode','scr-coins','scr-buy','scr-account','scr-legal','scr-africa'];
+const SCREENS = ['scr-auth','scr-watch','scr-episode','scr-coins','scr-buy','scr-account','scr-legal','scr-africa','scr-join'];
 function go(name) {
   SCREENS.forEach(s => $(s)?.classList.toggle('hidden', s !== name));
   const inShell = name !== 'scr-auth';
@@ -595,7 +698,7 @@ function go(name) {
 function tabFor(screen) {
   if (screen === 'scr-coins' || screen === 'scr-buy') return 'tCoins';
   if (screen === 'scr-account' || screen === 'scr-legal') return 'tAccount';
-  if (screen === 'scr-africa') return 'tAfrica';
+  if (screen === 'scr-africa' || screen === 'scr-join') return 'tAfrica';
   return 'tWatch';
 }
 
