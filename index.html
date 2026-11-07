@@ -154,6 +154,17 @@
   .joinform .chk input{width:20px;height:20px;flex:0 0 20px;margin:2px 0 0;padding:0;box-shadow:none}
   .afr-count{display:block;margin-top:6px;color:#F8F5EC;font-family:system-ui,-apple-system,sans-serif;font-size:.85rem}
   select.langsel{width:100%;padding:12px;margin:6px 0;border-radius:12px;color:var(--text);background:rgba(15,23,42,.7);border:1px solid rgba(71,85,105,.6);font:inherit}
+  .mg-head{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 4px}
+  .mg-head div{background:rgba(2,6,23,.45);border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+  .mg-head span{display:block;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .mg-head strong{display:block;margin-top:4px;color:var(--text);font-size:.95rem;font-family:system-ui,-apple-system,sans-serif}
+  .mg-section{margin-top:14px}
+  .mg-section h2{margin-bottom:4px}
+  .mg-section .muted{font-size:.85rem;margin:0 0 6px}
+  .mg-danger{border:1px solid rgba(239,68,68,.45)!important;background:linear-gradient(145deg,rgba(127,29,29,.25),rgba(15,23,42,.8))!important}
+  .mg-danger h2{color:#FCA5A5}
+  button.danger{background:linear-gradient(135deg,#DC2626,#991B1B)!important;box-shadow:0 10px 22px -12px rgba(220,38,38,.8)!important}
+  .status-pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.75rem;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:#A7F3D0}
 </style>
 </head>
 <body>
@@ -350,6 +361,7 @@
       <h1 id="hubTitle"></h1>
       <p id="hubIntro"></p>
       <p class="afr-count" id="hubNo"></p>
+      <div class="afr-cta"><button type="button" class="alt" id="hubManage">Manage my membership</button></div>
     </div>
     <div class="afr-section">
       <h2>Explore</h2>
@@ -361,11 +373,27 @@
     </div>
   </section>
 
+  <!-- Membership management -->
+  <section id="scr-manage" class="hidden afr">
+    <button type="button" class="alt back" id="manageBack">← Back to Africa United</button>
+    <div class="afr-hero">
+      <div class="afr-kicker">Membership</div>
+      <h1>Manage my membership</h1>
+      <p>Update your basic details, or remove your membership. Your membership number is permanent.</p>
+    </div>
+    <div id="manageBody"></div>
+  </section>
+
   <section id="scr-account" class="hidden">
     <div class="card plain">
       <p class="muted">Signed in as</p>
       <h2 id="acctEmail"></h2>
       <button type="button" class="alt" id="signOut">Sign out</button>
+    </div>
+    <div class="card plain">
+      <h2>Membership</h2>
+      <p class="muted">View and update your Africa United membership details.</p>
+      <button type="button" class="alt" id="acctManage">Manage membership</button>
     </div>
     <div class="card plain">
       <h2>Language</h2>
@@ -738,6 +766,130 @@ async function submitJoin() {
   $('joinExplore').onclick = () => openHub(currentJoin.code);
 }
 $('joinBack').onclick = () => go('scr-africa');
+$('manageBack').onclick = () => go('scr-africa');
+$('hubManage').onclick = () => openManage();
+$('acctManage').onclick = () => openManage();
+
+async function openManage() {
+  if (!user) { go('scr-auth'); return; }
+  $('shell').classList.remove('hidden');
+  const { data, error } = await sb.from('africa_members').select('*').eq('user_id', user.id).maybeSingle();
+  if (error) { step('manage load error: ' + error.message); say('catalogMsg', 'We could not load your membership. Please try again.'); return; }
+  if (!data) {
+    say('listMsg', 'You do not have a membership yet. Choose a country on the Africa United page to register.');
+    go('scr-africa');
+    return;
+  }
+  renderManage(data);
+  go('scr-manage');
+}
+
+function renderManage(m) {
+  const c = COUNTRIES.find(x => x.code === m.country);
+  const name = c ? c.name : m.country;
+  const flag = c ? c.flag : '';
+  const date = new Date(m.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  const updated = new Date(m.updated_at || m.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  $('manageBody').innerHTML = `
+    <div class="card plain">
+      <div class="mg-head">
+        <div><span>Membership number</span><strong>${esc(membershipNo(m))}</strong></div>
+        <div><span>Country</span><strong>${flag} ${esc(name)}</strong></div>
+        <div><span>Registered</span><strong>${esc(date)}</strong></div>
+        <div><span>Status</span><strong><span class="status-pill">Active</span></strong></div>
+      </div>
+      <p class="muted" style="margin-top:8px">Last updated: ${esc(updated)}. The country and membership number cannot be changed.</p>
+    </div>
+
+    <div class="card plain mg-section">
+      <h2>Personal details</h2>
+      <p class="muted">Your email comes from your account and cannot be changed here.</p>
+      <label for="mFullName">Full name</label>
+      <input id="mFullName" type="text" value="${esc(m.full_name)}">
+      <label for="mCity">City or state</label>
+      <input id="mCity" type="text" value="${esc(m.city || '')}">
+      <label for="mPhone">Phone number (required)</label>
+      <input id="mPhone" type="tel" value="${esc(m.phone || '')}">
+      <button type="button" id="mSave">Save changes</button>
+      <div class="msg" id="mMsg"></div>
+    </div>
+
+    <div class="card plain mg-section">
+      <h2>Areas of interest</h2>
+      ${INTERESTS.map(t => `<label class="chk"><input type="checkbox" class="mInt" value="${esc(t)}" ${(m.interests || []).includes(t) ? 'checked' : ''}> ${esc(t)}</label>`).join('')}
+      <label class="chk"><input type="checkbox" id="mUpdates" ${m.updates_opt_in ? 'checked' : ''}> Send me updates about Africa United.</label>
+      <button type="button" id="mSaveInterests">Save preferences</button>
+      <div class="msg" id="mMsg2"></div>
+    </div>
+
+    <div class="card plain mg-section mg-danger">
+      <h2>Delete my membership</h2>
+      <p class="muted">This removes your membership and its details from our records. Your phone number and email become available again for future registration. Your membership number is never reused. This cannot be undone.</p>
+      <label for="mConfirm">Type DELETE to confirm</label>
+      <input id="mConfirm" type="text" autocomplete="off">
+      <button type="button" class="danger" id="mDelete">Delete my membership</button>
+      <div class="msg" id="mMsg3"></div>
+    </div>`;
+
+  $('mSave').onclick = () => saveDetails(m);
+  $('mSaveInterests').onclick = () => saveInterests(m);
+  $('mDelete').onclick = () => deleteMembership(m);
+}
+
+async function saveDetails(m) {
+  const name = $('mFullName').value.trim();
+  const phone = $('mPhone').value.replace(/\D/g, '');
+  if (!name) { say('mMsg', 'Please enter your full name.'); return; }
+  if (phone.length < 7) { say('mMsg', 'Please enter a valid phone number.'); return; }
+  $('mSave').disabled = true;
+  const { data, error } = await sb.from('africa_members')
+    .update({ full_name: name, city: $('mCity').value.trim() || null, phone })
+    .eq('user_id', user.id).select('*').single();
+  $('mSave').disabled = false;
+  if (error) {
+    if (error.code === '23505') {
+      say('mMsg', (error.message || '').includes('phone') ? 'This phone number is already registered with Africa United.' : 'This detail is already in use.');
+      return;
+    }
+    step('manage save error: ' + error.message);
+    say('mMsg', 'We could not save your details. Please try again.');
+    return;
+  }
+  renderManage(data);
+  say('mMsg', 'Your details have been saved.');
+}
+
+async function saveInterests(m) {
+  const interests = [...document.querySelectorAll('.mInt:checked')].map(i => i.value);
+  const { data, error } = await sb.from('africa_members')
+    .update({ interests, updates_opt_in: $('mUpdates').checked })
+    .eq('user_id', user.id).select('*').single();
+  if (error) {
+    step('manage preferences error: ' + error.message);
+    say('mMsg2', 'We could not save your preferences. Please try again.');
+    return;
+  }
+  renderManage(data);
+  say('mMsg2', 'Your preferences have been saved.');
+}
+
+async function deleteMembership(m) {
+  if ($('mConfirm').value.trim() !== 'DELETE') {
+    say('mMsg3', 'Please type DELETE in capital letters to confirm.');
+    return;
+  }
+  $('mDelete').disabled = true;
+  const { error } = await sb.from('africa_members').delete().eq('user_id', user.id);
+  $('mDelete').disabled = false;
+  if (error) {
+    step('membership delete error: ' + error.message);
+    say('mMsg3', 'We could not delete your membership. Please try again.');
+    return;
+  }
+  step('membership deleted: ' + membershipNo(m));
+  say('listMsg', 'Your membership has been deleted. You can register again at any time.');
+  go('scr-africa');
+}
 $('afrOpenAuth').onclick = () => openAfrica();
 function openAfrica() {
   renderCountries();
@@ -845,7 +997,7 @@ $('pFull').onclick = async () => {
 $('pX').onclick = () => stopPlayer();
 
 /* ---------- Screen switching ---------- */
-const SCREENS = ['scr-auth','scr-watch','scr-episode','scr-coins','scr-buy','scr-account','scr-legal','scr-africa','scr-join','scr-hub'];
+const SCREENS = ['scr-auth','scr-watch','scr-episode','scr-coins','scr-buy','scr-account','scr-legal','scr-africa','scr-join','scr-hub','scr-manage'];
 function go(name) {
   SCREENS.forEach(s => $(s)?.classList.toggle('hidden', s !== name));
   const inShell = name !== 'scr-auth';
@@ -857,7 +1009,7 @@ function go(name) {
 function tabFor(screen) {
   if (screen === 'scr-coins' || screen === 'scr-buy') return 'tCoins';
   if (screen === 'scr-account' || screen === 'scr-legal') return 'tAccount';
-  if (screen === 'scr-africa' || screen === 'scr-join' || screen === 'scr-hub') return 'tAfrica';
+  if (screen === 'scr-africa' || screen === 'scr-join' || screen === 'scr-hub' || screen === 'scr-manage') return 'tAfrica';
   return 'tWatch';
 }
 
