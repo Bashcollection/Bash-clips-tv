@@ -165,6 +165,10 @@
   .mg-danger h2{color:#FCA5A5}
   button.danger{background:linear-gradient(135deg,#DC2626,#991B1B)!important;box-shadow:0 10px 22px -12px rgba(220,38,38,.8)!important}
   .status-pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.75rem;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:#A7F3D0}
+  input[type="checkbox"]{width:20px;height:20px;min-width:20px;flex:0 0 20px;padding:0;margin:2px 0 0;box-shadow:none;border-radius:5px;accent-color:#3B82F6}
+  .chk{display:flex;gap:10px;align-items:flex-start;margin:10px 2px;color:var(--text-2);font-size:.92rem;line-height:1.4}
+  .phonerow{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.4fr);gap:8px;align-items:center}
+  .phonerow select{margin:6px 0;min-width:0}
 </style>
 </head>
 <body>
@@ -609,6 +613,34 @@ const COUNTRIES = [
   { code: 'NE', name: 'Niger Republic', flag: '🇳🇪' },
   { code: 'BF', name: 'Burkina Faso', flag: '🇧🇫' },
 ];
+// International dialling codes for Africa (country name, code digits).
+const DIAL_CODES = [
+  ['Algeria','213'],['Angola','244'],['Benin','229'],['Botswana','267'],['Burkina Faso','226'],['Burundi','257'],
+  ['Cabo Verde','238'],['Cameroon','237'],['Central African Republic','236'],['Chad','235'],['Comoros','269'],
+  ['Congo (Republic)','242'],['Congo (DR)','243'],['Côte d’Ivoire','225'],['Djibouti','253'],['Egypt','20'],
+  ['Equatorial Guinea','240'],['Eritrea','291'],['Eswatini','268'],['Ethiopia','251'],['Gabon','241'],['Gambia','220'],
+  ['Ghana','233'],['Guinea','224'],['Guinea-Bissau','245'],['Kenya','254'],['Lesotho','266'],['Liberia','231'],
+  ['Libya','218'],['Madagascar','261'],['Malawi','265'],['Mali','223'],['Mauritania','222'],['Mauritius','230'],
+  ['Morocco','212'],['Mozambique','258'],['Namibia','264'],['Niger Republic','227'],['Nigeria','234'],['Rwanda','250'],
+  ['São Tomé and Príncipe','239'],['Senegal','221'],['Seychelles','248'],['Sierra Leone','232'],['Somalia','252'],
+  ['South Africa','27'],['South Sudan','211'],['Sudan','249'],['Tanzania','255'],['Togo','228'],['Tunisia','216'],
+  ['Uganda','256'],['Zambia','260'],['Zimbabwe','263'],
+];
+const DIAL_SORTED = [...DIAL_CODES].sort((a, b) => b[1].length - a[1].length);
+function dialOptions(selected) {
+  return DIAL_CODES.map(([n, c]) => `<option value="${c}" ${c === selected ? 'selected' : ''}>${esc(n)} (+${c})</option>`).join('');
+}
+// Phone number stored as one string of digits, with the country code first (e.g. 2348012345678).
+function fullPhone(dialId, localId) {
+  const local = $(localId).value.replace(/\D/g, '').replace(/^0+/, '');
+  if (local.length < 6 || local.length > 12) return null;
+  return $(dialId).value + local;
+}
+function splitPhone(full) {
+  if (!full) return { dial: '234', local: '' };
+  const hit = DIAL_SORTED.find(([, c]) => full.startsWith(c));
+  return hit ? { dial: hit[1], local: full.slice(hit[1].length) } : { dial: '234', local: full };
+}
 const INTERESTS = [
   'Cross-Border Youth Showcase',
   'Our Culture, Our Story',
@@ -715,8 +747,11 @@ async function renderJoin() {
     <p style="margin:4px 0">${c.flag} ${esc(c.name)}</p>
     <label for="jCity">City or state</label>
     <input id="jCity" type="text">
-    <label for="jPhone">Phone number (required, used to confirm your membership)</label>
-    <input id="jPhone" type="tel" autocomplete="tel">
+    <label>Phone number (required, used to confirm your membership)</label>
+    <div class="phonerow">
+      <select id="jDial" class="langsel">${dialOptions(c.code === 'NG' ? '234' : c.code === 'NE' ? '227' : '226')}</select>
+      <input id="jPhone" type="tel" autocomplete="tel" placeholder="Number without the country code">
+    </div>
     <label>Areas you are interested in (optional)</label>
     ${INTERESTS.map(t => `<label class="chk"><input type="checkbox" class="jInt" value="${esc(t)}"> ${esc(t)}</label>`).join('')}
     <label class="chk"><input type="checkbox" id="jUpdates"> Send me updates about Africa United.</label>
@@ -728,9 +763,9 @@ async function renderJoin() {
 }
 async function submitJoin() {
   const name = $('jName').value.trim();
-  const phone = $('jPhone').value.replace(/\D/g, '');
+  const phone = fullPhone('jDial', 'jPhone');
   if (!name) { say('jMsg', 'Please enter your full name.'); return; }
-  if (phone.length < 7) { say('jMsg', 'Please enter a valid phone number.'); return; }
+  if (!phone) { say('jMsg', 'Please enter a valid phone number, without the country code.'); return; }
   if (!$('jJ18').checked || !$('jJTerms').checked) {
     say('jMsg', 'Please confirm you are 18 or older and accept the Terms and Privacy Policy.');
     return;
@@ -808,8 +843,11 @@ function renderManage(m) {
       <input id="mFullName" type="text" value="${esc(m.full_name)}">
       <label for="mCity">City or state</label>
       <input id="mCity" type="text" value="${esc(m.city || '')}">
-      <label for="mPhone">Phone number (required)</label>
-      <input id="mPhone" type="tel" value="${esc(m.phone || '')}">
+      <label>Phone number (required)</label>
+      <div class="phonerow">
+        <select id="mDial" class="langsel">${dialOptions(splitPhone(m.phone).dial)}</select>
+        <input id="mPhone" type="tel" autocomplete="tel" value="${esc(splitPhone(m.phone).local)}" placeholder="Number without the country code">
+      </div>
       <button type="button" id="mSave">Save changes</button>
       <div class="msg" id="mMsg"></div>
     </div>
@@ -838,9 +876,9 @@ function renderManage(m) {
 
 async function saveDetails(m) {
   const name = $('mFullName').value.trim();
-  const phone = $('mPhone').value.replace(/\D/g, '');
+  const phone = fullPhone('mDial', 'mPhone');
   if (!name) { say('mMsg', 'Please enter your full name.'); return; }
-  if (phone.length < 7) { say('mMsg', 'Please enter a valid phone number.'); return; }
+  if (!phone) { say('mMsg', 'Please enter a valid phone number, without the country code.'); return; }
   $('mSave').disabled = true;
   const { data, error } = await sb.from('africa_members')
     .update({ full_name: name, city: $('mCity').value.trim() || null, phone })
