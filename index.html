@@ -153,6 +153,7 @@
   .joinform .chk{display:flex;gap:10px;align-items:flex-start;margin:8px 0;color:var(--text-2);font-size:.9rem}
   .joinform .chk input{width:20px;height:20px;flex:0 0 20px;margin:2px 0 0;padding:0;box-shadow:none}
   .afr-count{display:block;margin-top:6px;color:#F8F5EC;font-family:system-ui,-apple-system,sans-serif;font-size:.85rem}
+  select.langsel{width:100%;padding:12px;margin:6px 0;border-radius:12px;color:var(--text);background:rgba(15,23,42,.7);border:1px solid rgba(71,85,105,.6);font:inherit}
 </style>
 </head>
 <body>
@@ -181,6 +182,9 @@
     <button type="button" data-doc="refund" class="legalOpen">Refunds</button>
     <button type="button" data-doc="parental" class="legalOpen">Parental guide</button>
     <button type="button" id="afrOpenAuth">🌍 Africa United</button>
+  </div>
+  <div class="consent" style="justify-content:center;margin-top:8px">
+    <label>Language <select id="langSelAuth" class="langsel"></select></label>
   </div>
 </main>
 
@@ -267,14 +271,14 @@
   <section id="scr-africa" class="hidden afr">
     <div class="afr-hero">
       <div class="afr-kicker">Independent initiative</div>
-      <h1>AFRICA UNITED – BEYOND BORDERS</h1>
-      <p class="afr-tag">One People. Many Cultures. One Future.</p>
-      <p>Africa United – Beyond Borders is an independent initiative connecting young Africans through cultural exchange, creative expression, digital storytelling, youth development and international collaboration.</p>
+      <h1 id="afrH1">AFRICA UNITED – BEYOND BORDERS</h1>
+      <p class="afr-tag" id="afrTag">One People. Many Cultures. One Future.</p>
+      <p id="afrIntro">Africa United – Beyond Borders is an independent initiative connecting young Africans through cultural exchange, creative expression, digital storytelling, youth development and international collaboration.</p>
       <p>Our goal is to build bridges across African countries, celebrate our diversity and create opportunities for young people to work together.</p>
       <div class="afr-cta">
-        <button type="button" data-scroll="afr-about">Discover Africa United</button>
-        <button type="button" class="alt" data-scroll="afr-programmes">Explore Our Programmes</button>
-        <button type="button" class="alt" data-tab="tWatch">Watch Our Stories</button>
+        <button type="button" id="afrCtaAbout" data-scroll="afr-about">Discover Africa United</button>
+        <button type="button" class="alt" id="afrCtaProg" data-scroll="afr-programmes">Explore Our Programmes</button>
+        <button type="button" class="alt" id="afrCtaStories" data-tab="tWatch">Watch Our Stories</button>
       </div>
     </div>
 
@@ -363,6 +367,12 @@
       <button type="button" class="alt" id="signOut">Sign out</button>
     </div>
     <div class="card plain">
+      <h2>Language</h2>
+      <p class="muted">Choose the language for the app.</p>
+      <select id="langSel" class="langsel"></select>
+      <p class="muted" id="langNote"></p>
+    </div>
+    <div class="card plain">
       <h2>Invite friends</h2>
       <p class="muted">Share your personal link. Friends who sign up with it are linked to your account.</p>
       <div class="linkbox" id="refLink">Loading your link...</div>
@@ -409,6 +419,67 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', 
 const say = (id, t) => { $(id).textContent = t; };
 
 let mode = 'in', cur = 'NGN', user = null, token = null, shownFor = null;
+
+/* ---------- Language ---------- */
+// "ready" languages have full text. Others show English until a fluent reviewer approves the wording.
+const LANGS = [
+  { code: 'en', label: 'English', ready: true },
+  { code: 'fr', label: 'Français', ready: true },
+  { code: 'ha', label: 'Hausa (translation in review)', ready: false },
+  { code: 'yo', label: 'Yorùbá (translation in review)', ready: false },
+  { code: 'zu', label: 'isiZulu (translation in review)', ready: false },
+];
+const STRINGS = {
+  en: {
+    tabWatch: 'Watch', tabCoins: 'Coins', tabAccount: 'Account', tabAfrica: '🌍 Africa United',
+    signIn: 'Sign in', signUp: 'Sign up (+50 coins)', google: 'Continue with Google', guest: 'Browse as guest',
+    heroTitle: 'AFRICA UNITED – BEYOND BORDERS', heroTag: 'One People. Many Cultures. One Future.',
+    heroIntro: 'Africa United – Beyond Borders is an independent initiative connecting young Africans through cultural exchange, creative expression, digital storytelling, youth development and international collaboration.',
+    ctaAbout: 'Discover Africa United', ctaProg: 'Explore Our Programmes', ctaStories: 'Watch Our Stories',
+  },
+  fr: {
+    tabWatch: 'Regarder', tabCoins: 'Pièces', tabAccount: 'Compte', tabAfrica: '🌍 Africa United',
+    signIn: 'Se connecter', signUp: "S'inscrire (+50 pièces)", google: 'Continuer avec Google', guest: 'Parcourir en invité',
+    heroTitle: 'AFRIQUE UNIE – AU-DELÀ DES FRONTIÈRES', heroTag: 'Un seul peuple. Plusieurs cultures. Un seul avenir.',
+    heroIntro: "Africa United – Au-delà des frontières est une initiative indépendante qui relie les jeunes Africains à travers l'échange culturel, l'expression créative, la narration numérique, le développement de la jeunesse et la collaboration internationale.",
+    ctaAbout: 'Découvrir Africa United', ctaProg: 'Explorer nos programmes', ctaStories: 'Regarder nos histoires',
+  },
+};
+const LANG_MAP = {
+  tWatch: 'tabWatch', tCoins: 'tabCoins', tAccount: 'tabAccount', tAfrica: 'tabAfrica',
+  tabIn: 'signIn', tabUp: 'signUp', google: 'google', guest: 'guest',
+  afrH1: 'heroTitle', afrTag: 'heroTag', afrIntro: 'heroIntro',
+  afrCtaAbout: 'ctaAbout', afrCtaProg: 'ctaProg', afrCtaStories: 'ctaStories',
+};
+let lang = localStorage.getItem('bct_lang') || 'en';
+function tr(key) {
+  const l = LANGS.find(x => x.code === lang);
+  if (l && l.ready && STRINGS[lang] && STRINGS[lang][key]) return STRINGS[lang][key];
+  return STRINGS.en[key];
+}
+function applyLang() {
+  Object.entries(LANG_MAP).forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = tr(key);
+  });
+  ['langSel', 'langSelAuth'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = LANGS.map(l => `<option value="${l.code}">${l.label}</option>`).join('');
+    sel.value = lang;
+  });
+  const cur = LANGS.find(x => x.code === lang);
+  const note = document.getElementById('langNote');
+  if (note) note.textContent = cur && !cur.ready ? 'This language is still being reviewed, so English is shown for now.' : '';
+}
+function setLang(code) {
+  lang = code;
+  localStorage.setItem('bct_lang', code);
+  applyLang();
+}
+document.getElementById('langSel')?.addEventListener('change', e => setLang(e.target.value));
+document.getElementById('langSelAuth')?.addEventListener('change', e => setLang(e.target.value));
+
 let myRef = '';
 // Referral code from the link (?ref=CODE). Kept on this device until sign-up.
 const urlRef = new URLSearchParams(location.search).get('ref');
@@ -1022,6 +1093,7 @@ window.buy = async packId => {
 };
 
 $('tAfrica').onclick = () => openAfrica();
+applyLang();
 step('page loaded');
 if (new URLSearchParams(location.search).get('page') === 'africa') {
   setTimeout(() => openAfrica(), 3000);
