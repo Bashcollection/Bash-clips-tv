@@ -170,6 +170,23 @@
   .phonerow{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;align-items:stretch}
   .phonerow select{margin:6px 0 0;min-width:0;width:100%}
   .phonerow input{margin:0 0 6px}
+  .topav{display:flex;align-items:center;margin-right:8px}
+  .activepill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.75rem;font-weight:600;letter-spacing:.04em;
+    background:rgba(201,162,39,.15);border:1px solid rgba(201,162,39,.55);color:#F3D77A}
+  .sechead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  .savedpill{display:inline-block;padding:4px 12px;border-radius:999px;font-size:.78rem;font-weight:700;letter-spacing:.04em;
+    background:rgba(16,185,129,.2);border:1px solid rgba(16,185,129,.7);color:#A7F3D0}
+  .editpill{display:inline-block;padding:4px 12px;border-radius:999px;font-size:.78rem;font-weight:700;letter-spacing:.04em;
+    background:rgba(59,130,246,.2);border:1px solid rgba(59,130,246,.7);color:#BFDBFE}
+  .saved-card{border-color:rgba(16,185,129,.6)!important;box-shadow:0 0 0 1px rgba(16,185,129,.25),0 18px 40px -20px rgba(16,185,129,.35)!important}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .btnrow button{flex:1 1 140px;width:auto}
+  .kv{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:8px 14px;margin:10px 0;font-size:.95rem}
+  .kv dt{color:var(--muted);font-size:.82rem;letter-spacing:.03em;text-transform:uppercase;align-self:center}
+  .kv dd{margin:0;color:var(--text);font-weight:500;overflow-wrap:anywhere}
+  .kvlist{list-style:none;padding:0;margin:10px 0;color:var(--text-2)}
+  .kvlist li{padding:6px 0;border-bottom:1px dashed rgba(71,85,105,.5)}
+  @media (max-width:420px){ .kv{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
@@ -208,6 +225,7 @@
 <div class="wrap hidden" id="shell">
   <div class="topbar">
     <strong class="brand-title">Bash Clips TV</strong>
+    <div class="topav" id="topAvatar"></div>
     <button type="button" class="balchip" id="balChip" title="Buy coins">— coins</button>
   </div>
   <nav class="tabs">
@@ -366,6 +384,7 @@
       <h1 id="hubTitle"></h1>
       <p id="hubIntro"></p>
       <p class="afr-count" id="hubNo"></p>
+      <div id="hubAvatar" style="margin-top:12px"></div>
       <div class="afr-cta"><button type="button" class="alt" id="hubManage">Manage my membership</button></div>
     </div>
     <div class="afr-section">
@@ -390,10 +409,19 @@
   </section>
 
   <section id="scr-account" class="hidden">
+    <button type="button" class="alt back" id="acctBack">← Back to Watch</button>
     <div class="card plain">
       <p class="muted">Signed in as</p>
       <h2 id="acctEmail"></h2>
       <button type="button" class="alt" id="signOut">Sign out</button>
+    </div>
+    <div class="card plain">
+      <h2>Profile photo</h2>
+      <div id="acctAvatar" style="display:flex;justify-content:center;margin:10px 0"></div>
+      <label for="avFile">Change photo</label>
+      <input type="file" id="avFile" accept="image/jpeg,image/png,image/webp">
+      <p class="muted">JPG, PNG or WebP, under 2 MB. Accounts that sign in with Google use their Google photo.</p>
+      <div class="msg" id="avMsg"></div>
     </div>
     <div class="card plain">
       <h2>Membership</h2>
@@ -660,7 +688,11 @@ function renderCountries() {
 }
 async function loadCounts() {
   const { data, error } = await sb.rpc('africa_member_counts');
-  if (error) { step('counts error: ' + error.message); return; }
+  if (error) {
+    step('counts error: ' + error.message);
+    COUNTRIES.forEach(c => { const el = $('cnt-' + c.code); if (el) el.textContent = 'Count unavailable. Reopen this page to retry.'; });
+    return;
+  }
   COUNTRIES.forEach(c => {
     const row = (data || []).find(r => r.country_code === c.code);
     const n = row ? Number(row.member_count) : 0;
@@ -803,6 +835,46 @@ async function submitJoin() {
 }
 $('joinBack').onclick = () => go('scr-africa');
 $('manageBack').onclick = () => go('scr-africa');
+$('acctBack').onclick = () => go('scr-watch');
+$('avFile').onchange = e => uploadAvatar(e.target.files[0]);
+
+// Profile photo: Google photo if signed in with Google, otherwise an uploaded photo, otherwise initials.
+function avatarUrl() {
+  const m = user?.user_metadata || {};
+  return m.avatar_url || m.picture || null;
+}
+function initials() {
+  const m = user?.user_metadata || {};
+  const n = (m.full_name || user?.email || '?').trim();
+  const parts = n.split(/[\s@._-]+/).filter(Boolean);
+  return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || '?';
+}
+function avatarHTML(size) {
+  const url = avatarUrl();
+  const base = `width:${size}px;height:${size}px;border-radius:50%;flex:0 0 ${size}px;border:2px solid rgba(201,162,39,.6);`;
+  if (url) return `<img src="${esc(url)}" alt="Profile photo" referrerpolicy="no-referrer" style="${base}object-fit:cover">`;
+  return `<span style="${base}display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#3B82F6,#4F46E5);color:#fff;font-weight:700;font-size:${Math.round(size * 0.36)}px;font-family:system-ui,-apple-system,sans-serif">${esc(initials())}</span>`;
+}
+function renderAvatars() {
+  if (!user) return;
+  const sizes = { topAvatar: 34, acctAvatar: 84, hubAvatar: 48 };
+  Object.entries(sizes).forEach(([id, size]) => { const el = $(id); if (el) el.innerHTML = avatarHTML(size); });
+}
+async function uploadAvatar(file) {
+  if (!user || !file) return;
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { say('avMsg', 'Please choose a JPG, PNG or WebP image.'); return; }
+  if (file.size > 2 * 1024 * 1024) { say('avMsg', 'Please choose an image under 2 MB.'); return; }
+  say('avMsg', 'Uploading...');
+  const path = `${user.id}/avatar`;
+  const up = await sb.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type });
+  if (up.error) { step('avatar upload error: ' + up.error.message); say('avMsg', 'Upload failed. Please try again.'); return; }
+  const { data } = sb.storage.from('avatars').getPublicUrl(path);
+  const r = await sb.auth.updateUser({ data: { avatar_url: data.publicUrl + '?v=' + Date.now() } });
+  if (r.error) { step('avatar save error: ' + r.error.message); say('avMsg', 'Photo uploaded, but it could not be saved to your account.'); return; }
+  user = r.data.user;
+  renderAvatars();
+  say('avMsg', 'Your profile photo has been updated.');
+}
 $('hubManage').onclick = () => openManage();
 $('acctManage').onclick = () => openManage();
 
@@ -820,13 +892,63 @@ async function openManage() {
   go('scr-manage');
 }
 
-function renderManage(m) {
+let manageUI = { details: 'view', prefs: 'view' };
+let manageRow = null;
+function statePill(st) {
+  if (st === 'saved') return '<span class="savedpill">✓ Saved</span>';
+  if (st === 'edit') return '<span class="editpill">Editing</span>';
+  return '';
+}
+function renderManage(m, keepState) {
+  manageRow = m;
+  if (!keepState) manageUI = { details: 'view', prefs: 'view' };
   const c = COUNTRIES.find(x => x.code === m.country);
   const name = c ? c.name : m.country;
   const flag = c ? c.flag : '';
   const date = new Date(m.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
   const updated = new Date(m.updated_at || m.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  const phoneShown = m.phone ? '+' + m.phone : 'Not added yet';
+
+  const detailsBody = manageUI.details === 'edit'
+    ? `<label for="mFullName">Full name</label>
+       <input id="mFullName" type="text" value="${esc(m.full_name)}">
+       <label for="mCity">City or state</label>
+       <input id="mCity" type="text" value="${esc(m.city || '')}">
+       <label>Phone number (required)</label>
+       <div class="phonerow">
+         <select id="mDial" class="langsel">${dialOptions(splitPhone(m.phone).dial)}</select>
+         <input id="mPhone" type="tel" autocomplete="tel" value="${esc(splitPhone(m.phone).local)}" placeholder="Number without the country code">
+       </div>
+       <div class="btnrow"><button type="button" id="mSave">Save changes</button><button type="button" class="alt" id="mCancel">Cancel</button></div>
+       <div class="msg" id="mMsg"></div>`
+    : `<dl class="kv">
+         <dt>Full name</dt><dd>${esc(m.full_name)}</dd>
+         <dt>City or state</dt><dd>${esc(m.city || '—')}</dd>
+         <dt>Phone number</dt><dd>${esc(phoneShown)}</dd>
+         <dt>Email</dt><dd>${esc(maskEmail(m.email))}</dd>
+       </dl>
+       <div class="btnrow"><button type="button" class="alt" id="mEdit">Edit details</button></div>`;
+
+  const prefsBody = manageUI.prefs === 'edit'
+    ? `${INTERESTS.map(t => `<label class="chk"><input type="checkbox" class="mInt" value="${esc(t)}" ${(m.interests || []).includes(t) ? 'checked' : ''}> ${esc(t)}</label>`).join('')}
+       <label class="chk"><input type="checkbox" id="mUpdates" ${m.updates_opt_in ? 'checked' : ''}> Send me updates about Africa United.</label>
+       <div class="btnrow"><button type="button" id="mSaveInterests">Save preferences</button><button type="button" class="alt" id="mCancelPrefs">Cancel</button></div>
+       <div class="msg" id="mMsg2"></div>`
+    : `<ul class="kvlist">
+         ${INTERESTS.map(t => `<li>${(m.interests || []).includes(t) ? '✓' : '–'} ${esc(t)}</li>`).join('')}
+         <li>${m.updates_opt_in ? '✓' : '–'} Updates about Africa United</li>
+       </ul>
+       <div class="btnrow"><button type="button" class="alt" id="mEditPrefs">Edit preferences</button></div>`;
+
   $('manageBody').innerHTML = `
+    <div class="card plain" style="display:flex;align-items:center;gap:14px">
+      ${avatarHTML(60)}
+      <div>
+        <strong style="font-size:1.05rem;display:block">${esc(m.full_name)}</strong>
+        <span class="activepill" style="margin-top:6px">Active member</span>
+      </div>
+    </div>
+
     <div class="card plain">
       <div class="mg-head">
         <div><span>Membership number</span><strong>${esc(membershipNo(m))}</strong></div>
@@ -837,28 +959,14 @@ function renderManage(m) {
       <p class="muted" style="margin-top:8px">Last updated: ${esc(updated)}. The country and membership number cannot be changed.</p>
     </div>
 
-    <div class="card plain mg-section">
-      <h2>Personal details</h2>
-      <p class="muted">Your email comes from your account and cannot be changed here.</p>
-      <label for="mFullName">Full name</label>
-      <input id="mFullName" type="text" value="${esc(m.full_name)}">
-      <label for="mCity">City or state</label>
-      <input id="mCity" type="text" value="${esc(m.city || '')}">
-      <label>Phone number (required)</label>
-      <div class="phonerow">
-        <select id="mDial" class="langsel">${dialOptions(splitPhone(m.phone).dial)}</select>
-        <input id="mPhone" type="tel" autocomplete="tel" value="${esc(splitPhone(m.phone).local)}" placeholder="Number without the country code">
-      </div>
-      <button type="button" id="mSave">Save changes</button>
-      <div class="msg" id="mMsg"></div>
+    <div class="card plain mg-section ${manageUI.details === 'saved' ? 'saved-card' : ''}">
+      <div class="sechead"><h2>Personal details</h2>${statePill(manageUI.details)}</div>
+      ${detailsBody}
     </div>
 
-    <div class="card plain mg-section">
-      <h2>Areas of interest</h2>
-      ${INTERESTS.map(t => `<label class="chk"><input type="checkbox" class="mInt" value="${esc(t)}" ${(m.interests || []).includes(t) ? 'checked' : ''}> ${esc(t)}</label>`).join('')}
-      <label class="chk"><input type="checkbox" id="mUpdates" ${m.updates_opt_in ? 'checked' : ''}> Send me updates about Africa United.</label>
-      <button type="button" id="mSaveInterests">Save preferences</button>
-      <div class="msg" id="mMsg2"></div>
+    <div class="card plain mg-section ${manageUI.prefs === 'saved' ? 'saved-card' : ''}">
+      <div class="sechead"><h2>Areas of interest and updates</h2>${statePill(manageUI.prefs)}</div>
+      ${prefsBody}
     </div>
 
     <div class="card plain mg-section mg-danger">
@@ -870,12 +978,17 @@ function renderManage(m) {
       <div class="msg" id="mMsg3"></div>
     </div>`;
 
-  $('mSave').onclick = () => saveDetails(m);
-  $('mSaveInterests').onclick = () => saveInterests(m);
-  $('mDelete').onclick = () => deleteMembership(m);
+  const on = (id, fn) => { const el = $(id); if (el) el.onclick = fn; };
+  on('mEdit', () => { manageUI.details = 'edit'; renderManage(manageRow, true); });
+  on('mCancel', () => { manageUI.details = 'view'; renderManage(manageRow, true); });
+  on('mSave', () => saveDetails());
+  on('mEditPrefs', () => { manageUI.prefs = 'edit'; renderManage(manageRow, true); });
+  on('mCancelPrefs', () => { manageUI.prefs = 'view'; renderManage(manageRow, true); });
+  on('mSaveInterests', () => saveInterests());
+  on('mDelete', () => deleteMembership(m));
 }
 
-async function saveDetails(m) {
+async function saveDetails() {
   const name = $('mFullName').value.trim();
   const phone = fullPhone('mDial', 'mPhone');
   if (!name) { say('mMsg', 'Please enter your full name.'); return; }
@@ -894,11 +1007,11 @@ async function saveDetails(m) {
     say('mMsg', 'We could not save your details. Please try again.');
     return;
   }
-  renderManage(data);
-  say('mMsg', 'Your details have been saved.');
+  manageUI.details = 'saved';
+  renderManage(data, true);
 }
 
-async function saveInterests(m) {
+async function saveInterests() {
   const interests = [...document.querySelectorAll('.mInt:checked')].map(i => i.value);
   const { data, error } = await sb.from('africa_members')
     .update({ interests, updates_opt_in: $('mUpdates').checked })
@@ -908,8 +1021,8 @@ async function saveInterests(m) {
     say('mMsg2', 'We could not save your preferences. Please try again.');
     return;
   }
-  renderManage(data);
-  say('mMsg2', 'Your preferences have been saved.');
+  manageUI.prefs = 'saved';
+  renderManage(data, true);
 }
 
 async function deleteMembership(m) {
@@ -1079,6 +1192,7 @@ async function route(session) {
   shownFor = user.id;
   step('signed in as ' + user.email);
   $('acctEmail').textContent = maskEmail(user.email);
+  renderAvatars();
   await loadCatalog();
   await loadBalance();
   go('scr-watch');
