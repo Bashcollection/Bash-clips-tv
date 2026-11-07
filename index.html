@@ -349,6 +349,7 @@
       <div class="afr-kicker">Member hub</div>
       <h1 id="hubTitle"></h1>
       <p id="hubIntro"></p>
+      <p class="afr-count" id="hubNo"></p>
     </div>
     <div class="afr-section">
       <h2>Explore</h2>
@@ -608,8 +609,8 @@ async function loadCounts() {
 }
 async function openCountry(code) {
   if (user) {
-    const { data } = await sb.from('africa_members').select('id').eq('user_id', user.id).eq('country', code).maybeSingle();
-    if (data) { openHub(code); return; }
+    const { data } = await sb.from('africa_members').select('country').eq('user_id', user.id).maybeSingle();
+    if (data && data.country === code) { openHub(code); return; }
   }
   openJoin(code);
 }
@@ -630,7 +631,17 @@ function openHub(code) {
   $('hubTopics').innerHTML = HUB_TOPICS.map(([t, d]) =>
     `<div class="afr-card"><h3>${esc(t)}</h3><p>${esc(d)}</p><span class="soon" style="margin-top:8px">Coming soon</span></div>`
   ).join('');
+  loadHubNo(code);
   go('scr-hub');
+}
+async function loadHubNo(code) {
+  $('hubNo').textContent = '';
+  if (!user) return;
+  const { data } = await sb.from('africa_members').select('country, serial_no').eq('user_id', user.id).maybeSingle();
+  if (data && data.country === code) $('hubNo').textContent = 'Membership number: ' + membershipNo(data);
+}
+function membershipNo(row) {
+  return `AU-${row.country}-${String(row.serial_no).padStart(6, '0')}`;
 }
 $('hubBack').onclick = () => go('scr-africa');
 
@@ -653,16 +664,20 @@ async function renderJoin() {
     $('joinSignIn').onclick = () => go('scr-auth');
     return;
   }
-  const { data, error } = await sb.from('africa_members').select('id').eq('user_id', user.id).eq('country', c.code).maybeSingle();
+  const { data, error } = await sb.from('africa_members').select('country, serial_no').eq('user_id', user.id).maybeSingle();
   if (error) {
     step('membership check error: ' + error.message);
     $('joinBody').innerHTML = `<p>We could not check your registration. Please try again later.</p>`;
     return;
   }
   if (data) {
-    $('joinBody').innerHTML = `<p>You have already registered as a member for ${esc(c.name)}. Thank you.</p>
-      <button type="button" id="joinExplore">Explore ${esc(c.name)}</button>`;
-    $('joinExplore').onclick = () => openHub(c.code);
+    const owner = COUNTRIES.find(x => x.code === data.country);
+    const ownerName = owner ? owner.name : data.country;
+    $('joinBody').innerHTML = `<p>You are already a member of Africa United for <strong>${esc(ownerName)}</strong>.</p>
+      <p>Membership number: <strong>${esc(membershipNo(data))}</strong></p>
+      <p>Each person can hold one membership, so a second country cannot be added to the same account.</p>
+      <button type="button" id="joinExplore">Open my member hub</button>`;
+    $('joinExplore').onclick = () => openHub(data.country);
     return;
   }
   $('joinBody').innerHTML = `
@@ -672,10 +687,10 @@ async function renderJoin() {
     <p style="margin:4px 0">${c.flag} ${esc(c.name)}</p>
     <label for="jCity">City or state</label>
     <input id="jCity" type="text">
-    <label for="jPhone">Phone (optional)</label>
+    <label for="jPhone">Phone number (required, used to confirm your membership)</label>
     <input id="jPhone" type="tel" autocomplete="tel">
     <label>Areas you are interested in (optional)</label>
-    ${INTERESTS.map((t, i) => `<label class="chk"><input type="checkbox" class="jInt" value="${esc(t)}"> ${esc(t)}</label>`).join('')}
+    ${INTERESTS.map(t => `<label class="chk"><input type="checkbox" class="jInt" value="${esc(t)}"> ${esc(t)}</label>`).join('')}
     <label class="chk"><input type="checkbox" id="jUpdates"> Send me updates about Africa United.</label>
     <label class="chk"><input type="checkbox" id="jJ18"> I confirm I am 18 years or older.</label>
     <label class="chk"><input type="checkbox" id="jJTerms"> I agree to the Terms &amp; Conditions and Privacy Policy.</label>
@@ -685,30 +700,40 @@ async function renderJoin() {
 }
 async function submitJoin() {
   const name = $('jName').value.trim();
+  const phone = $('jPhone').value.replace(/\D/g, '');
   if (!name) { say('jMsg', 'Please enter your full name.'); return; }
+  if (phone.length < 7) { say('jMsg', 'Please enter a valid phone number.'); return; }
   if (!$('jJ18').checked || !$('jJTerms').checked) {
     say('jMsg', 'Please confirm you are 18 or older and accept the Terms and Privacy Policy.');
     return;
   }
   const interests = [...document.querySelectorAll('.jInt:checked')].map(i => i.value);
   $('jSubmit').disabled = true;
-  const { error } = await sb.from('africa_members').insert({
+  const { data, error } = await sb.from('africa_members').insert({
     user_id: user.id,
     country: currentJoin.code,
     full_name: name,
     city: $('jCity').value.trim() || null,
-    phone: $('jPhone').value.trim() || null,
+    phone,
     interests,
     updates_opt_in: $('jUpdates').checked,
-  });
+  }).select('country, serial_no').single();
   $('jSubmit').disabled = false;
   if (error) {
-    if (error.code === '23505') { say('jMsg', 'You have already registered for this country.'); return; }
+    if (error.code === '23505') {
+      const m = error.message || '';
+      if (m.includes('phone')) say('jMsg', 'This phone number is already registered with Africa United.');
+      else if (m.includes('email')) say('jMsg', 'This email is already registered with Africa United.');
+      else say('jMsg', 'You already have a membership. Each person can hold one.');
+      return;
+    }
     step('membership error: ' + error.message);
     say('jMsg', 'We could not save your registration. Please try again.');
     return;
   }
-  $('joinBody').innerHTML = `<p>Thank you, ${esc(name)}. Your membership request for ${esc(currentJoin.name)} has been recorded. Membership benefits and programme details will be announced.</p>
+  $('joinBody').innerHTML = `<p>Thank you, ${esc(name)}. Your membership for ${esc(currentJoin.name)} is recorded.</p>
+    <p>Membership number: <strong>${esc(membershipNo(data))}</strong></p>
+    <p>Please keep this number for your records. Membership benefits and programme details will be announced.</p>
     <button type="button" id="joinExplore">Explore ${esc(currentJoin.name)}</button>`;
   $('joinExplore').onclick = () => openHub(currentJoin.code);
 }
