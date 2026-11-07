@@ -152,6 +152,7 @@
   .joinform label{display:block;margin:12px 0 2px;color:var(--text-2);font-size:.9rem}
   .joinform .chk{display:flex;gap:10px;align-items:flex-start;margin:8px 0;color:var(--text-2);font-size:.9rem}
   .joinform .chk input{width:20px;height:20px;flex:0 0 20px;margin:2px 0 0;padding:0;box-shadow:none}
+  .afr-count{display:block;margin-top:6px;color:#F8F5EC;font-family:system-ui,-apple-system,sans-serif;font-size:.85rem}
 </style>
 </head>
 <body>
@@ -337,6 +338,24 @@
     <div class="card plain joinform" id="joinBody"></div>
   </section>
 
+  <!-- Member hub (after registration) -->
+  <section id="scr-hub" class="hidden afr">
+    <button type="button" class="alt back" id="hubBack">← Back to Africa United</button>
+    <div class="afr-hero">
+      <div class="afr-kicker">Member hub</div>
+      <h1 id="hubTitle"></h1>
+      <p id="hubIntro"></p>
+    </div>
+    <div class="afr-section">
+      <h2>Explore</h2>
+      <div class="afr-grid" id="hubTopics"></div>
+    </div>
+    <div class="afr-section">
+      <h2>Movement updates</h2>
+      <p><span class="soon">Announcements coming soon</span></p>
+    </div>
+  </section>
+
   <section id="scr-account" class="hidden">
     <div class="card plain">
       <p class="muted">Signed in as</p>
@@ -498,13 +517,52 @@ const INTERESTS = [
 ];
 function renderCountries() {
   $('afrCountries').innerHTML = COUNTRIES.map(c =>
-    `<div class="afr-card clickable" role="button" tabindex="0" onclick="openJoin('${c.code}')">
+    `<div class="afr-card clickable" role="button" tabindex="0" onclick="openCountry('${c.code}')">
        <span class="afr-flag">${c.flag}</span><strong>${esc(c.name)}</strong>
-       <span class="join">Register as a member →</span>
+       <span class="afr-count" id="cnt-${c.code}">Loading members...</span>
+       <span class="join">Register or explore →</span>
      </div>`
   ).join('');
   $('afrCount').textContent = COUNTRIES.length;
 }
+async function loadCounts() {
+  const { data, error } = await sb.rpc('africa_member_counts');
+  if (error) { step('counts error: ' + error.message); return; }
+  COUNTRIES.forEach(c => {
+    const row = (data || []).find(r => r.country_code === c.code);
+    const n = row ? Number(row.member_count) : 0;
+    const el = $('cnt-' + c.code);
+    if (el) el.textContent = n > 0 ? `${n} member${n === 1 ? '' : 's'}` : 'Be the first to join';
+  });
+}
+async function openCountry(code) {
+  if (user) {
+    const { data } = await sb.from('africa_members').select('id').eq('user_id', user.id).eq('country', code).maybeSingle();
+    if (data) { openHub(code); return; }
+  }
+  openJoin(code);
+}
+const HUB_TOPICS = [
+  ['Languages', 'Words, greetings and the languages spoken by members.'],
+  ['Music', 'Songs, rhythms and sounds from each country.'],
+  ['Fashion', 'Traditional and modern dress, and the stories behind them.'],
+  ['Arts and crafts', 'Visual art, craft and design.'],
+  ['Heritage and traditions', 'Festivals, customs and local history.'],
+  ['Stories from members', 'Short stories and experiences shared by members.'],
+];
+function openHub(code) {
+  const c = COUNTRIES.find(x => x.code === code);
+  if (!c) return;
+  $('shell').classList.remove('hidden');
+  $('hubTitle').textContent = `${c.flag} ${c.name}`;
+  $('hubIntro').textContent = `Welcome, member. Explore the culture of ${c.name} and the Africa United movement. Content is being prepared.`;
+  $('hubTopics').innerHTML = HUB_TOPICS.map(([t, d]) =>
+    `<div class="afr-card"><h3>${esc(t)}</h3><p>${esc(d)}</p><span class="soon" style="margin-top:8px">Coming soon</span></div>`
+  ).join('');
+  go('scr-hub');
+}
+$('hubBack').onclick = () => go('scr-africa');
+
 let currentJoin = null;
 function openJoin(code) {
   const c = COUNTRIES.find(x => x.code === code);
@@ -531,7 +589,9 @@ async function renderJoin() {
     return;
   }
   if (data) {
-    $('joinBody').innerHTML = `<p>You have already registered as a member for ${esc(c.name)}. Thank you.</p>`;
+    $('joinBody').innerHTML = `<p>You have already registered as a member for ${esc(c.name)}. Thank you.</p>
+      <button type="button" id="joinExplore">Explore ${esc(c.name)}</button>`;
+    $('joinExplore').onclick = () => openHub(c.code);
     return;
   }
   $('joinBody').innerHTML = `
@@ -577,12 +637,15 @@ async function submitJoin() {
     say('jMsg', 'We could not save your registration. Please try again.');
     return;
   }
-  $('joinBody').innerHTML = `<p>Thank you, ${esc(name)}. Your membership request for ${esc(currentJoin.name)} has been recorded. Membership benefits and programme details will be announced.</p>`;
+  $('joinBody').innerHTML = `<p>Thank you, ${esc(name)}. Your membership request for ${esc(currentJoin.name)} has been recorded. Membership benefits and programme details will be announced.</p>
+    <button type="button" id="joinExplore">Explore ${esc(currentJoin.name)}</button>`;
+  $('joinExplore').onclick = () => openHub(currentJoin.code);
 }
 $('joinBack').onclick = () => go('scr-africa');
 $('afrOpenAuth').onclick = () => openAfrica();
 function openAfrica() {
   renderCountries();
+  loadCounts();
   $('shell').classList.remove('hidden');
   go('scr-africa');
 }
@@ -686,7 +749,7 @@ $('pFull').onclick = async () => {
 $('pX').onclick = () => stopPlayer();
 
 /* ---------- Screen switching ---------- */
-const SCREENS = ['scr-auth','scr-watch','scr-episode','scr-coins','scr-buy','scr-account','scr-legal','scr-africa','scr-join'];
+const SCREENS = ['scr-auth','scr-watch','scr-episode','scr-coins','scr-buy','scr-account','scr-legal','scr-africa','scr-join','scr-hub'];
 function go(name) {
   SCREENS.forEach(s => $(s)?.classList.toggle('hidden', s !== name));
   const inShell = name !== 'scr-auth';
@@ -698,7 +761,7 @@ function go(name) {
 function tabFor(screen) {
   if (screen === 'scr-coins' || screen === 'scr-buy') return 'tCoins';
   if (screen === 'scr-account' || screen === 'scr-legal') return 'tAccount';
-  if (screen === 'scr-africa' || screen === 'scr-join') return 'tAfrica';
+  if (screen === 'scr-africa' || screen === 'scr-join' || screen === 'scr-hub') return 'tAfrica';
   return 'tWatch';
 }
 
