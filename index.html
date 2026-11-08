@@ -270,6 +270,9 @@
   .cmt .ctext{color:var(--text);margin-top:2px;overflow-wrap:anywhere;line-height:1.45}
   .cmt .cmeta{font-size:.72rem;color:var(--muted);margin-top:4px;display:flex;gap:12px;align-items:center}
   .cmt .cbtn{background:none;box-shadow:none;width:auto;margin:0;padding:0;font-size:.72rem;color:var(--muted);text-decoration:underline}
+  .plus{width:46px;height:46px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:1.7rem;font-weight:300;color:var(--text);cursor:pointer;flex:0 0 46px;line-height:1;margin:0}
+  .brow.theirs{align-items:flex-start}
+  .brow .av{margin-top:2px}
 </style>
 </head>
 <body>
@@ -326,13 +329,16 @@
   </div>
   <div class="chatbox chatpage" id="chatList"></div>
   <div class="chatcomposer">
+    <input type="file" id="chatFile" accept="image/jpeg,image/png,image/webp" style="display:none">
     <div class="cmp-compact" id="cmpCompact">
+      <label class="plus" for="chatFile" title="Add photo">+</label>
       <button type="button" class="cmp-open" id="cmpOpen">Write a message</button>
     </div>
     <div class="cmp-full" id="cmpFull" hidden>
       <textarea id="chatText" maxlength="1000" placeholder="Write a message"></textarea>
       <div class="cmp-row">
-        <label class="cmp-attach">📷 Photo<input type="file" id="chatFile" accept="image/jpeg,image/png,image/webp" style="display:none"></label>
+        <label class="plus" for="chatFile" title="Add photo">+</label>
+        <span class="muted" id="chatFileName" style="flex:1;font-size:.85rem"></span>
         <button type="button" class="send-round" id="chatSend" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M3 11.5 21 3l-8.5 18-2.2-7.3z"/></svg></button>
       </div>
       <div class="msg" id="chatMsg"></div>
@@ -1181,7 +1187,11 @@ function compactComposer() {
 $('cmpOpen').onclick = () => { showComposer(); $('chatText').focus(); };
 $('chatText').onfocus = showComposer;
 $('chatList').addEventListener('pointerdown', compactComposer);
-$('chatFile').onchange = () => { if ($('chatFile').files.length) showComposer(); };
+$('chatFile').onchange = () => {
+  const f = $('chatFile').files[0];
+  $('chatFileName').textContent = f ? '📷 ' + f.name : '';
+  if (f) showComposer();
+};
 window.openChatPage = () => {
   if (!currentHub) return;
   go('scr-chat');
@@ -1221,6 +1231,7 @@ $('chatSend').onclick = async () => {
   }
   $('chatText').value = '';
   $('chatFile').value = '';
+  $('chatFileName').textContent = '';
   say('chatMsg', '');
   compactComposer();
 };
