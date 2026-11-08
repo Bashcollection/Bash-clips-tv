@@ -194,6 +194,16 @@
   .cbtns{display:flex;gap:8px}
   .cbtns button{flex:1;margin:0;padding:10px}
   .linkbtn{background:none;box-shadow:none;width:auto;margin:0;padding:0;color:var(--sky);text-decoration:underline;font-weight:500;display:inline}
+  .chatbox{max-height:380px;overflow-y:auto;background:rgba(2,6,23,.5);border:1px solid var(--border);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px}
+  .chatmsg{background:rgba(30,41,59,.8);border:1px solid var(--border);border-radius:12px;padding:8px 10px}
+  .chatmsg .who{font-size:.82rem;color:#C9A227;font-weight:700}
+  .chatmsg .when{font-size:.7rem;color:var(--muted);margin-left:6px;font-weight:400}
+  .chatmsg p{margin:4px 0 0;color:var(--text);white-space:pre-wrap;overflow-wrap:anywhere}
+  .chatmsg img{max-width:100%;border-radius:10px;margin-top:6px;display:block}
+  .chatmsg .rep{background:none;box-shadow:none;width:auto;margin:4px 0 0;padding:0;font-size:.75rem;color:var(--muted);text-decoration:underline;display:inline}
+  .chatform textarea{width:100%;min-height:72px;padding:10px;border-radius:12px;background:rgba(15,23,42,.7);color:var(--text);border:1px solid rgba(71,85,105,.6);font:inherit;margin-top:8px;resize:vertical}
+  .filebtn{display:inline-block;flex:1 1 40%;text-align:center;padding:12px 10px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text-2);cursor:pointer;font-weight:600;margin:6px 0}
+  .chatform .btnrow button{flex:1 1 40%}
 </style>
 </head>
 <body>
@@ -395,6 +405,25 @@
       <div id="hubAvatar" style="margin-top:12px"></div>
       <div class="afr-cta"><button type="button" class="alt" id="hubManage">Manage my membership</button></div>
     </div>
+    <div class="afr-section" id="hubChat">
+      <h2>Country chat</h2>
+      <p class="muted">For members of this country only. Be respectful. Do not share other people's personal details.</p>
+      <div class="chatbox" id="chatList"></div>
+      <div class="chatform">
+        <label for="chatName">Your display name (shown to other members)</label>
+        <div class="btnrow" style="margin-top:4px">
+          <input id="chatName" type="text" maxlength="40" style="flex:2 1 60%">
+          <button type="button" class="alt" id="chatSaveName" style="flex:1 1 30%">Save name</button>
+        </div>
+        <textarea id="chatText" maxlength="1000" placeholder="Write a message"></textarea>
+        <div class="btnrow">
+          <label class="filebtn">📷 Add photo<input type="file" id="chatFile" accept="image/jpeg,image/png,image/webp" style="display:none"></label>
+          <button type="button" id="chatSend">Send</button>
+        </div>
+        <div class="msg" id="chatMsg"></div>
+      </div>
+    </div>
+
     <div class="afr-section">
       <h2>Explore</h2>
       <div class="afr-grid" id="hubTopics"></div>
@@ -786,6 +815,7 @@ function openHub(code) {
   ).join('');
   loadHubNo(code);
   go('scr-hub');
+  openChat(code);
 }
 async function loadHubNo(code) {
   $('hubNo').textContent = '';
@@ -797,6 +827,103 @@ function membershipNo(row) {
   return `AU-${row.country}-${String(row.serial_no).padStart(6, '0')}`;
 }
 $('hubBack').onclick = () => go('scr-africa');
+
+// ---- Country chat: members only, live, with photos and reporting ----
+function chatTime(iso) {
+  return new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+function chatItem(m) {
+  const photo = m.media_path ? `<img data-path="${esc(m.media_path)}" alt="Shared photo" src="">` : '';
+  const text = m.body ? `<p>${esc(m.body)}</p>` : '';
+  return `<div class="chatmsg" data-id="${esc(m.id)}">
+    <div><span class="who">${esc(m.author_name || 'Member')}</span><span class="when">${esc(chatTime(m.created_at))}</span></div>
+    ${text}${photo}
+    ${m.user_id !== user?.id ? `<button type="button" class="rep" onclick="reportMsg('${esc(m.id)}')">Report</button>` : ''}
+  </div>`;
+}
+async function loadChatPhotos(root) {
+  root.querySelectorAll('img[data-path]:not([src])').forEach(async img => {
+    const { data } = await sb.storage.from('africa-media').createSignedUrl(img.dataset.path, 3600);
+    if (data) img.src = data.signedUrl;
+  });
+}
+async function openChat(code) {
+  leaveChat();
+  if (!user) return;
+  chatCode = code;
+  say('chatMsg', '');
+  const { data: me } = await sb.from('africa_members').select('display_name').eq('user_id', user.id).maybeSingle();
+  $('chatName').value = me?.display_name || '';
+  const { data, error } = await sb.from('africa_messages')
+    .select('id, user_id, author_name, body, media_path, created_at')
+    .eq('country', code).eq('hidden', false)
+    .order('created_at', { ascending: false }).limit(50);
+  if (error) {
+    step('chat load error: ' + error.message);
+    $('chatList').innerHTML = '<p class="muted">Messages could not be loaded. Please try again.</p>';
+  } else {
+    $('chatList').innerHTML = (data || []).reverse().map(chatItem).join('') || '<p class="muted">No messages yet. Start the conversation.</p>';
+    loadChatPhotos($('chatList'));
+    $('chatList').scrollTop = $('chatList').scrollHeight;
+  }
+  chatChannel = sb.channel('africa-chat-' + code)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'africa_messages', filter: `country=eq.${code}` }, payload => {
+      const m = payload.new;
+      if (m.hidden || chatCode !== code) return;
+      const box = $('chatList');
+      if (box.querySelector('p.muted')) box.innerHTML = '';
+      box.insertAdjacentHTML('beforeend', chatItem(m));
+      loadChatPhotos(box);
+      box.scrollTop = box.scrollHeight;
+    })
+    .subscribe();
+}
+$('chatSaveName').onclick = async () => {
+  const name = $('chatName').value.trim();
+  if (!name) { say('chatMsg', 'Please enter a display name.'); return; }
+  const { error } = await sb.from('africa_members').update({ display_name: name }).eq('user_id', user.id);
+  say('chatMsg', error ? 'Your name could not be saved. Please try again.' : 'Your display name has been saved.');
+  if (error) step('display name error: ' + error.message);
+};
+$('chatSend').onclick = async () => {
+  const text = $('chatText').value.trim();
+  const file = $('chatFile').files[0];
+  if (!chatCode || !user) return;
+  if (!text && !file) { say('chatMsg', 'Write a message or add a photo.'); return; }
+  if (text.length > 1000) { say('chatMsg', 'Messages can be up to 1000 characters.'); return; }
+  if (file && !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { say('chatMsg', 'Please choose a JPG, PNG or WebP photo.'); return; }
+  if (file && file.size > 5 * 1024 * 1024) { say('chatMsg', 'Please choose a photo under 5 MB.'); return; }
+  $('chatSend').disabled = true;
+  say('chatMsg', 'Sending...');
+  let media_path = null;
+  if (file) {
+    const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+    const path = `${chatCode}/${user.id}/${crypto.randomUUID()}.${ext}`;
+    const up = await sb.storage.from('africa-media').upload(path, file, { contentType: file.type });
+    if (up.error) {
+      step('photo upload error: ' + up.error.message);
+      say('chatMsg', 'The photo could not be uploaded. Please try again.');
+      $('chatSend').disabled = false;
+      return;
+    }
+    media_path = path;
+  }
+  const { error } = await sb.from('africa_messages').insert({ country: chatCode, user_id: user.id, body: text || null, media_path });
+  $('chatSend').disabled = false;
+  if (error) {
+    step('message error: ' + error.message);
+    say('chatMsg', 'Your message could not be sent. Please try again.');
+    return;
+  }
+  $('chatText').value = '';
+  $('chatFile').value = '';
+  say('chatMsg', '');
+};
+window.reportMsg = async id => {
+  const { error } = await sb.from('africa_reports').insert({ message_id: id, reporter_id: user.id });
+  if (error && error.code !== '23505') { step('report error: ' + error.message); say('chatMsg', 'The report could not be sent.'); return; }
+  say('chatMsg', 'Thank you. This message has been reported for review.');
+};
 
 let currentJoin = null;
 function openJoin(code) {
@@ -1210,7 +1337,14 @@ $('pX').onclick = () => stopPlayer();
 
 /* ---------- Screen switching ---------- */
 const SCREENS = ['scr-auth','scr-watch','scr-episode','scr-coins','scr-buy','scr-account','scr-legal','scr-africa','scr-join','scr-hub','scr-manage'];
+var chatChannel = null;
+var chatCode = null;
+function leaveChat() {
+  if (chatChannel) { sb.removeChannel(chatChannel); chatChannel = null; }
+  chatCode = null;
+}
 function go(name) {
+  if (name !== 'scr-hub') leaveChat();
   SCREENS.forEach(s => $(s)?.classList.toggle('hidden', s !== name));
   const inShell = name !== 'scr-auth';
   $('shell').classList.toggle('hidden', !inShell);
