@@ -216,6 +216,13 @@
   .btime{font-size:.68rem;opacity:.7;margin-top:4px;text-align:right}
   .bactions{margin-top:8px;border-top:1px solid var(--border);padding-top:8px}
   .bactions button{width:auto;margin:0;padding:6px 10px;font-size:.78rem;background:none;box-shadow:none;color:#FCA5A5;text-decoration:underline;font-weight:600}
+  .bact{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;border-top:1px solid rgba(71,85,105,.5);padding-top:6px}
+  .bact button{width:auto;margin:0;padding:4px 8px;font-size:.78rem;background:none;box-shadow:none;color:var(--text-2);font-weight:600}
+  .bact button.on{color:#93C5FD}
+  .bact button.sv.on{color:#F3D77A}
+  .brow.mine .bact{border-top-color:rgba(255,255,255,.25)}
+  .brow.mine .bact button{color:rgba(255,255,255,.9)}
+  .brow.mine .bact button.on{color:#FDE68A}
 </style>
 </head>
 <body>
@@ -852,10 +859,17 @@ function chatItem(m) {
   const text = m.body ? `<p>${esc(m.body)}</p>` : '';
   const who = mine ? '' : `<div class="bwho">${esc(flag)} ${esc(m.author_name || 'Member')}</div>`;
   const report = mine ? '' : `<div class="bactions" hidden><button type="button" onclick="event.stopPropagation();reportMsg('${esc(m.id)}')">Report this message</button></div>`;
+  const liked = myLikes.has(m.id), saved = mySaves.has(m.id);
+  const acts = `<div class="bact">
+      <button type="button" class="lk${liked ? ' on' : ''}" onclick="event.stopPropagation();toggleLike('${esc(m.id)}')">👍 Like <span class="lc">${Number(m.like_count) || 0}</span></button>
+      <button type="button" onclick="event.stopPropagation();shareMsg('${esc(m.id)}')">↗ Share</button>
+      <button type="button" class="sv${saved ? ' on' : ''}" onclick="event.stopPropagation();toggleSave('${esc(m.id)}')">${saved ? '🔖 Saved' : '🔖 Save'}</button>
+    </div>`;
   return `<div class="brow ${mine ? 'mine' : 'theirs'}" data-id="${esc(m.id)}">
     <div class="bubble"${mine ? '' : ' onclick="toggleActions(this)"'}>
       ${who}${text}${photo}
       <div class="btime">${esc(chatTime(m.created_at))}</div>
+      ${acts}
       ${report}
     </div>
   </div>`;
@@ -864,6 +878,57 @@ window.toggleActions = el => {
   const a = el.querySelector('.bactions');
   if (a) a.hidden = !a.hidden;
 };
+var myLikes = new Set();
+var mySaves = new Set();
+async function loadMyEngagement() {
+  const [lk, sv] = await Promise.all([
+    sb.from('africa_likes').select('message_id').eq('user_id', user.id),
+    sb.from('africa_saves').select('message_id').eq('user_id', user.id),
+  ]);
+  myLikes = new Set((lk.data || []).map(r => r.message_id));
+  mySaves = new Set((sv.data || []).map(r => r.message_id));
+}
+window.toggleLike = async id => {
+  if (!user) return;
+  const liked = myLikes.has(id);
+  const btn = document.querySelector(`.brow[data-id="${id}"] .lk`);
+  if (btn) btn.disabled = true;
+  const res = liked
+    ? await sb.from('africa_likes').delete().eq('message_id', id).eq('user_id', user.id)
+    : await sb.from('africa_likes').insert({ message_id: id, user_id: user.id });
+  if (btn) btn.disabled = false;
+  if (res.error) { step('like error: ' + res.error.message); say('chatMsg', 'Could not update your like. Please try again.'); return; }
+  liked ? myLikes.delete(id) : myLikes.add(id);
+  if (btn) btn.classList.toggle('on', !liked);
+};
+window.toggleSave = async id => {
+  if (!user) return;
+  const saved = mySaves.has(id);
+  const btn = document.querySelector(`.brow[data-id="${id}"] .sv`);
+  if (btn) btn.disabled = true;
+  const res = saved
+    ? await sb.from('africa_saves').delete().eq('message_id', id).eq('user_id', user.id)
+    : await sb.from('africa_saves').insert({ message_id: id, user_id: user.id });
+  if (btn) btn.disabled = false;
+  if (res.error) { step('save error: ' + res.error.message); say('chatMsg', 'Could not save this message. Please try again.'); return; }
+  saved ? mySaves.delete(id) : mySaves.add(id);
+  if (btn) { btn.classList.toggle('on', !saved); btn.textContent = saved ? '🔖 Save' : '🔖 Saved'; }
+  say('chatMsg', saved ? '' : 'Saved to your list.');
+};
+window.shareMsg = async id => {
+  const el = document.querySelector(`.brow[data-id="${id}"] p`);
+  const text = el ? el.textContent : 'A photo from the Africa United member chat';
+  const shareText = `${text}
+
+Shared from the Africa United member chat.`;
+  if (navigator.share) {
+    try { await navigator.share({ title: 'Africa United', text: shareText, url: location.origin }); return; }
+    catch (err) { /* cancelled: fall back to copy */ }
+  }
+  try { await navigator.clipboard.writeText(shareText); say('chatMsg', 'Copied to your clipboard.'); }
+  catch (err) { say('chatMsg', 'Sharing is not available on this device.'); }
+};
+
 async function loadChatPhotos(root) {
   root.querySelectorAll('img[data-path]:not([data-loaded])').forEach(async img => {
     img.dataset.loaded = '1';
@@ -898,8 +963,9 @@ async function openChat(code) {
   say('chatMsg', '');
   const { data: me } = await sb.from('africa_members').select('display_name').eq('user_id', user.id).maybeSingle();
   $('chatName').value = me?.display_name || '';
+  await loadMyEngagement();
   const { data, error } = await sb.from('africa_messages')
-    .select('id, user_id, author_name, body, media_path, created_at')
+    .select('id, user_id, author_name, body, media_path, created_at, like_count')
     .eq('hidden', false)
     .order('created_at', { ascending: false }).limit(50);
   if (error) {
@@ -919,6 +985,10 @@ async function openChat(code) {
       box.insertAdjacentHTML('beforeend', chatItem(m));
       loadChatPhotos(box);
       box.scrollTop = box.scrollHeight;
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'africa_messages' }, payload => {
+      const el = document.querySelector(`.brow[data-id="${payload.new.id}"] .lc`);
+      if (el) el.textContent = Number(payload.new.like_count) || 0;
     })
     .subscribe();
 }
