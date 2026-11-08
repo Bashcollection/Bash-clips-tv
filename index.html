@@ -1370,11 +1370,16 @@ async function loadPremiere() {
     .gte('release_at', since).order('release_at').limit(1).maybeSingle();
   if (error) {
     step('premiere error: ' + error.message);
+    // temporary debug text: remove once the premiere card works
     show('premiere', true);
     $('premiere').innerHTML = '<p class="muted">Premiere information is unavailable right now.</p>';
     return;
   }
-  if (!data) { show('premiere', false); return; }
+  if (!data) {
+    show('premiere', true);
+    $('premiere').innerHTML = '<p class="muted">Premiere check: the app received no premiere from the database.</p>';
+    return;
+  }
   const el = $('premiere');
   const at = new Date(data.release_at).getTime();
   show('premiere', true);
