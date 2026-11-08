@@ -234,6 +234,16 @@
   .cform button{width:auto;margin:0;padding:8px 12px}
   .brow.mine .cit{background:rgba(15,23,42,.35)}
   .brow.mine .cbtn{color:rgba(255,255,255,.85)}
+  #scr-chat{position:fixed;inset:0;z-index:45;display:flex;flex-direction:column;background:var(--sunray);background-attachment:fixed;padding:0;max-width:none;margin:0}
+  .chathead{display:flex;align-items:center;gap:12px;padding:12px 14px;background:linear-gradient(180deg,rgba(30,41,59,.95),rgba(15,23,42,.9));border-bottom:1px solid var(--border)}
+  .chathead button{width:auto;margin:0;padding:8px 12px}
+  .chathead strong{display:block;font-size:1.05rem}
+  .chatpage{flex:1 1 auto;min-height:0;max-height:none;border-radius:0;border-left:0;border-right:0;margin:0;padding:12px}
+  .chatcomposer{padding:10px 12px 14px;border-top:1px solid var(--border);background:rgba(15,23,42,.96)}
+  .chatcomposer textarea{margin-top:0}
+  .chatcomposer .btnrow{margin-top:6px}
+  .bubble{max-width:86%}
+  .bact button{font-size:.66rem;white-space:normal;line-height:1.2;overflow:visible;text-overflow:clip}
 </style>
 </head>
 <body>
@@ -267,6 +277,23 @@
     <label>Language <select id="langSelAuth" class="langsel"></select></label>
   </div>
 </main>
+
+<!-- Full-screen member chat -->
+<section id="scr-chat" class="hidden">
+  <div class="chathead">
+    <button type="button" class="alt" id="chatBack">← Back</button>
+    <div><strong>Member chat</strong><span class="muted">All Africa United members</span></div>
+  </div>
+  <div class="chatbox chatpage" id="chatList"></div>
+  <div class="chatcomposer chatform">
+    <textarea id="chatText" maxlength="1000" placeholder="Write a message"></textarea>
+    <div class="btnrow">
+      <label class="filebtn">📷 Add photo<input type="file" id="chatFile" accept="image/jpeg,image/png,image/webp" style="display:none"></label>
+      <button type="button" id="chatSend">Send</button>
+    </div>
+    <div class="msg" id="chatMsg"></div>
+  </div>
+</section>
 
 <!-- Signed-in shell -->
 <div class="wrap hidden" id="shell">
@@ -438,16 +465,8 @@
     </div>
     <div class="afr-section" id="hubChat">
       <h2>Member chat</h2>
-      <p class="muted">A general chat for all Africa United members, across all countries. Be respectful. Do not share other people's personal details.</p>
-      <div class="chatbox" id="chatList"></div>
-      <div class="chatform">
-        <textarea id="chatText" maxlength="1000" placeholder="Write a message"></textarea>
-        <div class="btnrow">
-          <label class="filebtn">📷 Add photo<input type="file" id="chatFile" accept="image/jpeg,image/png,image/webp" style="display:none"></label>
-          <button type="button" id="chatSend">Send</button>
-        </div>
-        <div class="msg" id="chatMsg"></div>
-      </div>
+      <p class="muted">A general chat for all Africa United members, across all countries. Share, comment and appreciate each other's work.</p>
+      <div class="afr-cta"><button type="button" id="openChatBtn">Open member chat</button></div>
     </div>
 
     <div class="afr-section">
@@ -841,8 +860,8 @@ function openHub(code) {
     `<div class="afr-card"><h3>${esc(t)}</h3><p>${esc(d)}</p><span class="soon" style="margin-top:8px">Coming soon</span></div>`
   ).join('');
   loadHubNo(code);
+  currentHub = code;
   go('scr-hub');
-  openChat(code);
 }
 async function loadHubNo(code) {
   $('hubNo').textContent = '';
@@ -1093,6 +1112,13 @@ async function openChat(code) {
     })
     .subscribe();
 }
+window.openChatPage = () => {
+  if (!currentHub) return;
+  go('scr-chat');
+  openChat(currentHub);
+};
+$('openChatBtn').onclick = () => openChatPage();
+$('chatBack').onclick = () => { leaveChat(); go('scr-hub'); };
 $('chatSend').onclick = async () => {
   const text = $('chatText').value.trim();
   const file = $('chatFile').files[0];
@@ -1547,7 +1573,8 @@ $('pFull').onclick = async () => {
 $('pX').onclick = () => stopPlayer();
 
 /* ---------- Screen switching ---------- */
-const SCREENS = ['scr-auth','scr-watch','scr-episode','scr-coins','scr-buy','scr-account','scr-legal','scr-africa','scr-join','scr-hub','scr-manage'];
+const SCREENS = ['scr-auth','scr-watch','scr-episode','scr-coins','scr-buy','scr-account','scr-legal','scr-africa','scr-join','scr-hub','scr-manage','scr-chat'];
+var currentHub = null;
 var chatChannel = null;
 var chatCode = null;
 function leaveChat() {
@@ -1555,7 +1582,7 @@ function leaveChat() {
   chatCode = null;
 }
 function go(name) {
-  if (name !== 'scr-hub') leaveChat();
+  if (name !== 'scr-hub' && name !== 'scr-chat') leaveChat();
   SCREENS.forEach(s => $(s)?.classList.toggle('hidden', s !== name));
   const inShell = name !== 'scr-auth';
   $('shell').classList.toggle('hidden', !inShell);
@@ -1567,7 +1594,7 @@ function tabFor(screen) {
   if (screen === 'scr-coins' || screen === 'scr-buy') return 'tCoins';
   if (screen === 'scr-account' || screen === 'scr-legal') return 'tAccount';
   if (screen === 'scr-manage') return 'tMember';
-  if (screen === 'scr-africa' || screen === 'scr-join' || screen === 'scr-hub') return 'tAfrica';
+  if (screen === 'scr-africa' || screen === 'scr-join' || screen === 'scr-hub' || screen === 'scr-chat') return 'tAfrica';
   return 'tWatch';
 }
 
