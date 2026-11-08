@@ -406,8 +406,8 @@
       <div class="afr-cta"><button type="button" class="alt" id="hubManage">Manage my membership</button></div>
     </div>
     <div class="afr-section" id="hubChat">
-      <h2>Country chat</h2>
-      <p class="muted">For members of this country only. Be respectful. Do not share other people's personal details.</p>
+      <h2>Member chat</h2>
+      <p class="muted">A general chat for all Africa United members, across all countries. Be respectful. Do not share other people's personal details.</p>
       <div class="chatbox" id="chatList"></div>
       <div class="chatform">
         <label for="chatName">Your display name (shown to other members)</label>
@@ -833,18 +833,21 @@ function chatTime(iso) {
   return new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 function chatItem(m) {
-  const photo = m.media_path ? `<img data-path="${esc(m.media_path)}" alt="Shared photo" src="">` : '';
+  const photo = m.media_path ? `<img data-path="${esc(m.media_path)}" alt="Shared photo">` : '';
   const text = m.body ? `<p>${esc(m.body)}</p>` : '';
+  const flag = (COUNTRIES.find(c => c.code === m.country) || {}).flag || '';
   return `<div class="chatmsg" data-id="${esc(m.id)}">
-    <div><span class="who">${esc(m.author_name || 'Member')}</span><span class="when">${esc(chatTime(m.created_at))}</span></div>
+    <div><span class="who">${flag} ${esc(m.author_name || 'Member')}</span><span class="when">${esc(chatTime(m.created_at))}</span></div>
     ${text}${photo}
     ${m.user_id !== user?.id ? `<button type="button" class="rep" onclick="reportMsg('${esc(m.id)}')">Report</button>` : ''}
   </div>`;
 }
 async function loadChatPhotos(root) {
-  root.querySelectorAll('img[data-path]:not([src])').forEach(async img => {
-    const { data } = await sb.storage.from('africa-media').createSignedUrl(img.dataset.path, 3600);
+  root.querySelectorAll('img[data-path]:not([data-loaded])').forEach(async img => {
+    img.dataset.loaded = '1';
+    const { data, error } = await sb.storage.from('africa-media').createSignedUrl(img.dataset.path, 3600);
     if (data) img.src = data.signedUrl;
+    else { step('photo load error: ' + (error ? error.message : 'unknown')); img.alt = 'Photo unavailable'; }
   });
 }
 async function openChat(code) {
@@ -856,7 +859,7 @@ async function openChat(code) {
   $('chatName').value = me?.display_name || '';
   const { data, error } = await sb.from('africa_messages')
     .select('id, user_id, author_name, body, media_path, created_at')
-    .eq('country', code).eq('hidden', false)
+    .eq('hidden', false)
     .order('created_at', { ascending: false }).limit(50);
   if (error) {
     step('chat load error: ' + error.message);
@@ -866,8 +869,8 @@ async function openChat(code) {
     loadChatPhotos($('chatList'));
     $('chatList').scrollTop = $('chatList').scrollHeight;
   }
-  chatChannel = sb.channel('africa-chat-' + code)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'africa_messages', filter: `country=eq.${code}` }, payload => {
+  chatChannel = sb.channel('africa-chat-general')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'africa_messages' }, payload => {
       const m = payload.new;
       if (m.hidden || chatCode !== code) return;
       const box = $('chatList');
