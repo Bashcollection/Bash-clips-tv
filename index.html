@@ -204,6 +204,18 @@
   .chatform textarea{width:100%;min-height:72px;padding:10px;border-radius:12px;background:rgba(15,23,42,.7);color:var(--text);border:1px solid rgba(71,85,105,.6);font:inherit;margin-top:8px;resize:vertical}
   .filebtn{display:inline-block;flex:1 1 40%;text-align:center;padding:12px 10px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text-2);cursor:pointer;font-weight:600;margin:6px 0}
   .chatform .btnrow button{flex:1 1 40%}
+  .brow{display:flex;margin:6px 0}
+  .brow.mine{justify-content:flex-end}
+  .brow.theirs{justify-content:flex-start}
+  .bubble{max-width:78%;padding:8px 12px;border-radius:16px;background:rgba(30,41,59,.92);border:1px solid var(--border);color:var(--text);cursor:pointer}
+  .brow.theirs .bubble{border-bottom-left-radius:4px}
+  .brow.mine .bubble{background:linear-gradient(135deg,#2563EB,#4F46E5);border-color:transparent;color:#fff;border-bottom-right-radius:4px;cursor:default}
+  .bwho{font-size:.78rem;font-weight:700;color:#C9A227;margin-bottom:2px}
+  .bubble p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;color:inherit}
+  .bubble img{display:block;max-width:200px;max-height:260px;width:auto;height:auto;border-radius:12px;margin-top:6px}
+  .btime{font-size:.68rem;opacity:.7;margin-top:4px;text-align:right}
+  .bactions{margin-top:8px;border-top:1px solid var(--border);padding-top:8px}
+  .bactions button{width:auto;margin:0;padding:6px 10px;font-size:.78rem;background:none;box-shadow:none;color:#FCA5A5;text-decoration:underline;font-weight:600}
 </style>
 </head>
 <body>
@@ -833,15 +845,25 @@ function chatTime(iso) {
   return new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 function chatItem(m) {
+  const mine = m.user_id === (user && user.id);
+  const c = COUNTRIES.find(x => x.code === m.country);
+  const flag = c ? c.flag : '';
   const photo = m.media_path ? `<img data-path="${esc(m.media_path)}" alt="Shared photo">` : '';
   const text = m.body ? `<p>${esc(m.body)}</p>` : '';
-  const flag = (COUNTRIES.find(c => c.code === m.country) || {}).flag || '';
-  return `<div class="chatmsg" data-id="${esc(m.id)}">
-    <div><span class="who">${flag} ${esc(m.author_name || 'Member')}</span><span class="when">${esc(chatTime(m.created_at))}</span></div>
-    ${text}${photo}
-    ${m.user_id !== user?.id ? `<button type="button" class="rep" onclick="reportMsg('${esc(m.id)}')">Report</button>` : ''}
+  const who = mine ? '' : `<div class="bwho">${esc(flag)} ${esc(m.author_name || 'Member')}</div>`;
+  const report = mine ? '' : `<div class="bactions" hidden><button type="button" onclick="event.stopPropagation();reportMsg('${esc(m.id)}')">Report this message</button></div>`;
+  return `<div class="brow ${mine ? 'mine' : 'theirs'}" data-id="${esc(m.id)}">
+    <div class="bubble"${mine ? '' : ' onclick="toggleActions(this)"'}>
+      ${who}${text}${photo}
+      <div class="btime">${esc(chatTime(m.created_at))}</div>
+      ${report}
+    </div>
   </div>`;
 }
+window.toggleActions = el => {
+  const a = el.querySelector('.bactions');
+  if (a) a.hidden = !a.hidden;
+};
 async function loadChatPhotos(root) {
   root.querySelectorAll('img[data-path]:not([data-loaded])').forEach(async img => {
     img.dataset.loaded = '1';
@@ -849,6 +871,25 @@ async function loadChatPhotos(root) {
     if (data) img.src = data.signedUrl;
     else { step('photo load error: ' + (error ? error.message : 'unknown')); img.alt = 'Photo unavailable'; }
   });
+}
+async function shrinkImage(file) {
+  try {
+    const bmp = await createImageBitmap(file);
+    const max = 1280;
+    const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(bmp, 0, 0, w, h);
+    bmp.close && bmp.close();
+    return await new Promise(res => canvas.toBlob(b => res(b || file), 'image/jpeg', 0.82));
+  } catch (err) {
+    step('image shrink fallback: ' + err.message);
+    return file;
+  }
 }
 async function openChat(code) {
   leaveChat();
@@ -900,9 +941,9 @@ $('chatSend').onclick = async () => {
   say('chatMsg', 'Sending...');
   let media_path = null;
   if (file) {
-    const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
-    const path = `${chatCode}/${user.id}/${crypto.randomUUID()}.${ext}`;
-    const up = await sb.storage.from('africa-media').upload(path, file, { contentType: file.type });
+    const small = await shrinkImage(file);
+    const path = `${chatCode}/${user.id}/${crypto.randomUUID()}.jpg`;
+    const up = await sb.storage.from('africa-media').upload(path, small, { contentType: 'image/jpeg' });
     if (up.error) {
       step('photo upload error: ' + up.error.message);
       say('chatMsg', 'The photo could not be uploaded. Please try again.');
