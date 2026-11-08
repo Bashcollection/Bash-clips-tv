@@ -1051,10 +1051,15 @@ async function openChat(code) {
   chatCode = code;
   say('chatMsg', '');
   await loadMyEngagement();
-  const { data, error } = await sb.from('africa_messages')
-    .select('id, user_id, author_name, body, media_path, created_at, like_count, comment_count')
-    .eq('hidden', false)
-    .order('created_at', { ascending: false }).limit(50);
+  const baseCols = 'id, user_id, author_name, body, media_path, created_at, like_count';
+  const q = cols => sb.from('africa_messages').select(cols)
+    .eq('hidden', false).order('created_at', { ascending: false }).limit(50);
+  // comment_count only exists once africa_comments.sql has been run, so fall back without it
+  let { data, error } = await q(baseCols + ', comment_count');
+  if (error && /comment_count/.test(error.message)) {
+    step('comment_count not set up yet: run sql/africa_comments.sql');
+    ({ data, error } = await q(baseCols));
+  }
   if (error) {
     step('chat load error: ' + error.message);
     $('chatList').innerHTML = '<p class="muted">Messages could not be loaded. Please try again.</p>';
