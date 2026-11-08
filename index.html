@@ -244,6 +244,32 @@
   .chatcomposer .btnrow{margin-top:6px}
   .bubble{max-width:86%}
   .bact button{font-size:.66rem;white-space:normal;line-height:1.2;overflow:visible;text-overflow:clip}
+  .av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#3B82F6,#4F46E5);color:#fff;font-weight:700;font-size:.8rem;display:inline-flex;align-items:center;justify-content:center;flex:0 0 34px;letter-spacing:.02em}
+  .brow.theirs{align-items:flex-end;gap:8px}
+  .brow .av{margin-bottom:2px}
+  .cmp-compact{display:flex;align-items:center;gap:10px}
+  .cmp-open{flex:1;text-align:left;margin:0;background:rgba(30,41,59,.85);border:1px solid var(--border);border-radius:24px;padding:13px 18px;color:var(--muted);font-weight:500;box-shadow:none}
+  .cmp-full textarea{border-radius:20px;min-height:58px;margin-top:0;padding:12px 16px}
+  .cmp-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+  .cmp-row .cmp-attach{flex:1;text-align:center;margin:0;padding:10px;border-radius:22px;background:var(--surface);border:1px solid var(--border);color:var(--text-2);font-size:.9rem;font-weight:600;cursor:pointer}
+  .send-round{width:46px;height:46px;border-radius:50%;margin:0;padding:0;flex:0 0 46px;display:inline-flex;align-items:center;justify-content:center}
+  .send-round svg{width:20px;height:20px;fill:#fff}
+  .sheet{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center}
+  .sheet.hidden{display:none!important}
+  .sheet-back{position:absolute;inset:0;background:rgba(2,6,23,.6)}
+  .sheet-body{position:relative;width:100%;max-width:560px;height:80vh;background:linear-gradient(180deg,#152238,#0B1222);border-radius:24px 24px 0 0;display:flex;flex-direction:column;border-top:1px solid var(--border-hi);box-shadow:0 -20px 50px -20px rgba(0,0,0,.9)}
+  .sheet-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border)}
+  .sheet-head strong{font-size:1.05rem}
+  .sheet-x{width:auto;margin:0;padding:4px 10px;background:none;box-shadow:none;color:var(--text-2);font-size:1.2rem}
+  .sheet-list{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:14px}
+  .sheet-form{display:flex;gap:10px;align-items:center;padding:10px 14px 18px;border-top:1px solid var(--border);background:rgba(15,23,42,.92)}
+  .sheet-form input{flex:1;margin:0;border-radius:24px;padding:12px 16px}
+  .cmt{display:flex;gap:10px;align-items:flex-start}
+  .cmt .cbody{flex:1;min-width:0}
+  .cmt .cwho{font-weight:700;color:#C9A227;font-size:.86rem}
+  .cmt .ctext{color:var(--text);margin-top:2px;overflow-wrap:anywhere;line-height:1.45}
+  .cmt .cmeta{font-size:.72rem;color:var(--muted);margin-top:4px;display:flex;gap:12px;align-items:center}
+  .cmt .cbtn{background:none;box-shadow:none;width:auto;margin:0;padding:0;font-size:.72rem;color:var(--muted);text-decoration:underline}
 </style>
 </head>
 <body>
@@ -278,6 +304,20 @@
   </div>
 </main>
 
+<!-- Comments panel -->
+<div id="cmtSheet" class="sheet hidden">
+  <div class="sheet-back" onclick="closeComments()"></div>
+  <div class="sheet-body">
+    <div class="sheet-head"><strong>Comments</strong><button type="button" class="sheet-x" onclick="closeComments()" aria-label="Close">✕</button></div>
+    <div class="sheet-list" id="cmtList"></div>
+    <div class="sheet-form">
+      <input id="cmtText" type="text" maxlength="500" placeholder="Write a comment">
+      <button type="button" class="send-round" id="cmtSend" aria-label="Send comment"><svg viewBox="0 0 24 24"><path d="M3 11.5 21 3l-8.5 18-2.2-7.3z"/></svg></button>
+    </div>
+    <div class="msg" id="cmtMsg" style="padding:0 16px 8px"></div>
+  </div>
+</div>
+
 <!-- Full-screen member chat -->
 <section id="scr-chat" class="hidden">
   <div class="chathead">
@@ -285,13 +325,18 @@
     <div><strong>Member chat</strong><span class="muted">All Africa United members</span></div>
   </div>
   <div class="chatbox chatpage" id="chatList"></div>
-  <div class="chatcomposer chatform">
-    <textarea id="chatText" maxlength="1000" placeholder="Write a message"></textarea>
-    <div class="btnrow">
-      <label class="filebtn">📷 Add photo<input type="file" id="chatFile" accept="image/jpeg,image/png,image/webp" style="display:none"></label>
-      <button type="button" id="chatSend">Send</button>
+  <div class="chatcomposer">
+    <div class="cmp-compact" id="cmpCompact">
+      <button type="button" class="cmp-open" id="cmpOpen">Write a message</button>
     </div>
-    <div class="msg" id="chatMsg"></div>
+    <div class="cmp-full" id="cmpFull" hidden>
+      <textarea id="chatText" maxlength="1000" placeholder="Write a message"></textarea>
+      <div class="cmp-row">
+        <label class="cmp-attach">📷 Photo<input type="file" id="chatFile" accept="image/jpeg,image/png,image/webp" style="display:none"></label>
+        <button type="button" class="send-round" id="chatSend" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M3 11.5 21 3l-8.5 18-2.2-7.3z"/></svg></button>
+      </div>
+      <div class="msg" id="chatMsg"></div>
+    </div>
   </div>
 </section>
 
@@ -878,6 +923,10 @@ $('hubBack').onclick = () => go('scr-africa');
 function chatTime(iso) {
   return new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
+function initialsOf(name) {
+  const parts = String(name || 'M').trim().split(/\s+/).filter(Boolean);
+  return ((parts[0] || 'M')[0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+}
 function chatItem(m) {
   const mine = m.user_id === (user && user.id);
   const c = COUNTRIES.find(x => x.code === m.country);
@@ -893,7 +942,7 @@ function chatItem(m) {
       <button type="button" class="sv${saved ? ' on' : ''}" onclick="event.stopPropagation();toggleSave('${esc(m.id)}')">${saved ? '🔖 Saved' : '🔖 Save'}</button>
       <button type="button" onclick="event.stopPropagation();toggleComments('${esc(m.id)}')">💬 Comment <span class="cc">${Number(m.comment_count) || 0}</span></button>
     </div>`;
-  const panel = `<div class="cpanel" hidden data-for="${esc(m.id)}" onclick="event.stopPropagation()">
+  const _unusedPanel = `<div class="cpanel" hidden data-for="${esc(m.id)}" onclick="event.stopPropagation()">
       <div class="clist"></div>
       <div class="cform">
         <input class="cin" type="text" maxlength="500" placeholder="Write a comment">
@@ -901,12 +950,12 @@ function chatItem(m) {
       </div>
       <div class="msg cmsg"></div>
     </div>`;
-  return `<div class="brow ${mine ? 'mine' : 'theirs'}" data-id="${esc(m.id)}">
+  const av = mine ? '' : `<div class="av">${esc(initialsOf(m.author_name))}</div>`;
+  return `<div class="brow ${mine ? 'mine' : 'theirs'}" data-id="${esc(m.id)}">${av}
     <div class="bubble"${mine ? '' : ' onclick="toggleActions(this)"'}>
       ${who}${text}${photo}
       <div class="btime">${esc(chatTime(m.created_at))}</div>
       ${acts}
-      ${panel}
       ${report}
     </div>
   </div>`;
@@ -915,23 +964,24 @@ window.toggleActions = el => {
   const a = el.querySelector('.bactions');
   if (a) a.hidden = !a.hidden;
 };
+var currentCmt = null;
 function commentHTML(c) {
   const mine = c.user_id === (user && user.id);
   const action = mine
-    ? `<button type="button" class="cbtn" onclick="event.stopPropagation();deleteComment('${esc(c.id)}')">Delete</button>`
-    : `<button type="button" class="cbtn" onclick="event.stopPropagation();reportComment('${esc(c.id)}')">Report</button>`;
-  return `<div class="cit" data-cid="${esc(c.id)}">
-    <span class="cwho">${esc(c.author_name || 'Member')}</span> <span>${esc(c.body)}</span>
-    <div class="cmeta">${esc(chatTime(c.created_at))} · ${action}</div>
+    ? `<button type="button" class="cbtn" onclick="deleteComment('${esc(c.id)}')">Delete</button>`
+    : `<button type="button" class="cbtn" onclick="reportComment('${esc(c.id)}')">Report</button>`;
+  return `<div class="cmt" data-cid="${esc(c.id)}">
+    <div class="av">${esc(initialsOf(c.author_name))}</div>
+    <div class="cbody">
+      <div class="cwho">${esc(c.author_name || 'Member')}</div>
+      <div class="ctext">${esc(c.body)}</div>
+      <div class="cmeta"><span>${esc(chatTime(c.created_at))}</span>${action}</div>
+    </div>
   </div>`;
 }
-function commentPanel(mid) {
-  return document.querySelector(`.cpanel[data-for="${mid}"]`);
-}
 function appendComment(c) {
-  const panel = commentPanel(c.message_id);
-  if (!panel || panel.hidden) return;
-  const list = panel.querySelector('.clist');
+  if (!currentCmt || currentCmt !== c.message_id) return;
+  const list = $('cmtList');
   if (list.querySelector(`[data-cid="${c.id}"]`)) return;
   const note = list.querySelector('.cnone');
   if (note) note.remove();
@@ -939,51 +989,57 @@ function appendComment(c) {
   list.scrollTop = list.scrollHeight;
 }
 window.toggleComments = async mid => {
-  const panel = commentPanel(mid);
-  if (!panel) return;
-  if (!panel.hidden) { panel.hidden = true; return; }
-  panel.hidden = false;
-  const list = panel.querySelector('.clist');
-  list.innerHTML = '<p class="muted cnone">Loading comments...</p>';
+  currentCmt = mid;
+  $('cmtSheet').classList.remove('hidden');
+  $('cmtMsg').textContent = '';
+  $('cmtList').innerHTML = '<p class="muted cnone">Loading comments...</p>';
   const { data, error } = await sb.from('africa_comments')
     .select('id, message_id, user_id, author_name, body, created_at')
     .eq('message_id', mid).order('created_at').limit(200);
+  if (currentCmt !== mid) return;
   if (error) {
     step('comments load error: ' + error.message);
-    list.innerHTML = '<p class="muted cnone">Comments could not be loaded.</p>';
+    $('cmtList').innerHTML = '<p class="muted cnone">Comments could not be loaded.</p>';
     return;
   }
-  list.innerHTML = (data || []).map(commentHTML).join('') || '<p class="muted cnone">No comments yet. Be the first.</p>';
-  panel.querySelector('.cin').focus();
+  $('cmtList').innerHTML = (data || []).map(commentHTML).join('') || '<p class="muted cnone">No comments yet. Be the first to comment.</p>';
+  $('cmtText').focus();
 };
-window.sendComment = async mid => {
-  const panel = commentPanel(mid);
-  const input = panel.querySelector('.cin');
+window.closeComments = () => {
+  currentCmt = null;
+  $('cmtSheet').classList.add('hidden');
+};
+async function sendComment() {
+  const input = $('cmtText');
   const text = input.value.trim();
-  const msg = panel.querySelector('.cmsg');
-  if (!text) { msg.textContent = 'Write a comment first.'; return; }
+  if (!currentCmt || !user) return;
+  if (!text) { say('cmtMsg', 'Write a comment first.'); return; }
+  $('cmtSend').disabled = true;
   const { data, error } = await sb.from('africa_comments')
-    .insert({ message_id: mid, user_id: user.id, body: text })
+    .insert({ message_id: currentCmt, user_id: user.id, body: text })
     .select('id, message_id, user_id, author_name, body, created_at').single();
+  $('cmtSend').disabled = false;
   if (error) {
     step('comment error: ' + error.message);
-    msg.textContent = 'Your comment could not be posted. Please try again.';
+    say('cmtMsg', 'Your comment could not be posted. Please try again.');
     return;
   }
   input.value = '';
-  msg.textContent = '';
+  say('cmtMsg', '');
   appendComment(data);
-};
+}
+$('cmtSend').onclick = () => sendComment();
+$('cmtText').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); sendComment(); } };
 window.deleteComment = async cid => {
   const { error } = await sb.from('africa_comments').delete().eq('id', cid).eq('user_id', user.id);
-  if (error) { step('comment delete error: ' + error.message); say('chatMsg', 'Could not delete the comment.'); return; }
-  const el = document.querySelector(`.cit[data-cid="${cid}"]`);
+  if (error) { step('comment delete error: ' + error.message); say('cmtMsg', 'Could not delete the comment.'); return; }
+  const el = document.querySelector(`.cmt[data-cid="${cid}"]`);
   if (el) el.remove();
 };
 window.reportComment = async cid => {
   const { error } = await sb.from('africa_reports').insert({ comment_id: cid, reporter_id: user.id });
-  if (error && error.code !== '23505') { step('report error: ' + error.message); say('chatMsg', 'The report could not be sent.'); return; }
-  say('chatMsg', 'Thank you. This comment has been reported for review.');
+  if (error && error.code !== '23505') { step('report error: ' + error.message); say('cmtMsg', 'The report could not be sent.'); return; }
+  say('cmtMsg', 'Thank you. This comment has been reported for review.');
 };
 
 var myLikes = new Set();
@@ -1112,6 +1168,20 @@ async function openChat(code) {
     })
     .subscribe();
 }
+function showComposer() {
+  $('cmpCompact').hidden = true;
+  $('cmpFull').hidden = false;
+}
+function compactComposer() {
+  if (!$('chatText').value.trim() && !$('chatFile').files.length) {
+    $('cmpFull').hidden = true;
+    $('cmpCompact').hidden = false;
+  }
+}
+$('cmpOpen').onclick = () => { showComposer(); $('chatText').focus(); };
+$('chatText').onfocus = showComposer;
+$('chatList').addEventListener('pointerdown', compactComposer);
+$('chatFile').onchange = () => { if ($('chatFile').files.length) showComposer(); };
 window.openChatPage = () => {
   if (!currentHub) return;
   go('scr-chat');
@@ -1152,6 +1222,7 @@ $('chatSend').onclick = async () => {
   $('chatText').value = '';
   $('chatFile').value = '';
   say('chatMsg', '');
+  compactComposer();
 };
 window.reportMsg = async id => {
   const { error } = await sb.from('africa_reports').insert({ message_id: id, reporter_id: user.id });
