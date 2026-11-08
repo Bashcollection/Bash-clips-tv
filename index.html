@@ -192,7 +192,6 @@
   #premiere h2{margin:2px 0 6px;font-size:1.15rem}
   .pm-count{font-weight:600;color:var(--text);margin:8px 0 0}
   #premiere button{width:auto;margin:6px 0 0;padding:10px 16px}
-  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
   .tile{margin:0;padding:16px 12px;font-size:.95rem}
   #consent{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(11,18,34,.97);border-top:1px solid var(--border-hi);
     padding:14px 16px;color:var(--text-2);font-size:.88rem;line-height:1.45;box-shadow:0 -10px 30px -10px rgba(0,0,0,.8)}
@@ -244,6 +243,7 @@
   <nav class="tabs">
     <button type="button" id="tWatch">Watch</button>
     <button type="button" id="tCoins" class="alt">Coins</button>
+    <button type="button" id="tMember" class="alt" title="My membership" aria-label="My membership">★</button>
     <button type="button" id="tAccount" class="alt">Account</button>
     <button type="button" id="tAfrica" class="alt">🌍 Africa United</button>
   </nav>
@@ -264,12 +264,6 @@
   <!-- Watch: episode list -->
   <section id="scr-watch">
     <div id="premiere" class="hidden card plain"></div>
-    <div class="tiles">
-      <button type="button" class="tile" id="tileWatch">▶ Watch</button>
-      <button type="button" class="tile alt" id="tileCoins">● Coins</button>
-      <button type="button" class="tile alt" id="tileAfrica">🌍 Africa United</button>
-      <button type="button" class="tile alt" id="tileMember">★ My membership</button>
-    </div>
     <div id="list"></div>
     <div class="msg" id="listMsg"></div>
   </section>
@@ -1234,7 +1228,8 @@ function go(name) {
 function tabFor(screen) {
   if (screen === 'scr-coins' || screen === 'scr-buy') return 'tCoins';
   if (screen === 'scr-account' || screen === 'scr-legal') return 'tAccount';
-  if (screen === 'scr-africa' || screen === 'scr-join' || screen === 'scr-hub' || screen === 'scr-manage') return 'tAfrica';
+  if (screen === 'scr-manage') return 'tMember';
+  if (screen === 'scr-africa' || screen === 'scr-join' || screen === 'scr-hub') return 'tAfrica';
   return 'tWatch';
 }
 
@@ -1332,13 +1327,11 @@ $('guest').onclick = () => { step('browsing as guest'); $('shell').classList.rem
 /* ---------- Tabs ---------- */
 $('tWatch').onclick = () => { go('scr-watch'); loadCatalog(); };
 $('tCoins').onclick = () => { go('scr-coins'); loadBalance(); };
+$('tMember').onclick = () => openManage();
 $('tAccount').onclick = () => go('scr-account');
 $('balChip').onclick = () => { if (!user) { go('scr-auth'); return; } renderPacks(); go('scr-buy'); };
 $('goBuy').onclick = () => { renderPacks(); go('scr-buy'); };
-$('tileWatch').onclick = () => $('tWatch').click();
-$('tileCoins').onclick = () => $('tCoins').click();
-$('tileAfrica').onclick = () => openAfrica();
-$('tileMember').onclick = () => openManage();
+
 $('buyBack').onclick = () => go('scr-coins');
 $('epBack').onclick = () => go('scr-watch');
 
@@ -1375,7 +1368,12 @@ async function loadPremiere() {
   const { data, error } = await sb.from('premieres')
     .select('title, subtitle, release_at').eq('is_active', true)
     .gte('release_at', since).order('release_at').limit(1).maybeSingle();
-  if (error) { step('premiere error: ' + error.message); show('premiere', false); return; }
+  if (error) {
+    step('premiere error: ' + error.message);
+    show('premiere', true);
+    $('premiere').innerHTML = '<p class="muted">Premiere information is unavailable right now.</p>';
+    return;
+  }
   if (!data) { show('premiere', false); return; }
   const el = $('premiere');
   const at = new Date(data.release_at).getTime();
