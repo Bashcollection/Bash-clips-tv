@@ -216,13 +216,24 @@
   .btime{font-size:.68rem;opacity:.7;margin-top:4px;text-align:right}
   .bactions{margin-top:8px;border-top:1px solid var(--border);padding-top:8px}
   .bactions button{width:auto;margin:0;padding:6px 10px;font-size:.78rem;background:none;box-shadow:none;color:#FCA5A5;text-decoration:underline;font-weight:600}
-  .bact{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;border-top:1px solid rgba(71,85,105,.5);padding-top:6px}
-  .bact button{width:auto;margin:0;padding:4px 8px;font-size:.78rem;background:none;box-shadow:none;color:var(--text-2);font-weight:600}
+  .bact{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;margin-top:6px;border-top:1px solid rgba(71,85,105,.5);padding-top:6px}
+  .bact button{width:100%;margin:0;padding:6px 2px;font-size:.7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:none;box-shadow:none;color:var(--text-2);font-weight:600;text-align:center}
   .bact button.on{color:#93C5FD}
   .bact button.sv.on{color:#F3D77A}
   .brow.mine .bact{border-top-color:rgba(255,255,255,.25)}
   .brow.mine .bact button{color:rgba(255,255,255,.9)}
   .brow.mine .bact button.on{color:#FDE68A}
+  .cpanel{margin-top:8px;border-top:1px solid rgba(71,85,105,.5);padding-top:8px}
+  .clist{display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;margin-bottom:6px}
+  .cit{background:rgba(2,6,23,.45);border-radius:10px;padding:6px 8px;font-size:.88rem;color:var(--text);overflow-wrap:anywhere}
+  .cwho{font-weight:700;color:#C9A227;font-size:.82rem}
+  .cmeta{font-size:.7rem;color:var(--muted);margin-top:2px}
+  .cbtn{background:none;box-shadow:none;width:auto;margin:0;padding:0;font-size:.7rem;color:var(--muted);text-decoration:underline;display:inline}
+  .cform{display:flex;gap:6px;margin-top:6px}
+  .cform input{flex:1;margin:0;padding:8px 10px;border-radius:10px}
+  .cform button{width:auto;margin:0;padding:8px 12px}
+  .brow.mine .cit{background:rgba(15,23,42,.35)}
+  .brow.mine .cbtn{color:rgba(255,255,255,.85)}
 </style>
 </head>
 <body>
@@ -358,6 +369,7 @@
       <p><strong>Vision.</strong> A connected Africa where young people move freely in ideas, culture and opportunity.</p>
       <p><strong>Mission.</strong> To create cross-border platforms for youth creativity, cultural exchange and digital storytelling.</p>
       <p><strong>Values.</strong> Unity, respect for diversity, creativity, integrity and shared responsibility.</p>
+      <p><strong>Our content.</strong> Through Bash Clips TV, we share short-form drama and entertainment that tell African stories.</p>
       <p class="muted" style="color:#C9A227">Founder &amp; Executive Director</p>
     </div>
 
@@ -429,11 +441,6 @@
       <p class="muted">A general chat for all Africa United members, across all countries. Be respectful. Do not share other people's personal details.</p>
       <div class="chatbox" id="chatList"></div>
       <div class="chatform">
-        <label for="chatName">Your display name (shown to other members)</label>
-        <div class="btnrow" style="margin-top:4px">
-          <input id="chatName" type="text" maxlength="40" style="flex:2 1 60%">
-          <button type="button" class="alt" id="chatSaveName" style="flex:1 1 30%">Save name</button>
-        </div>
         <textarea id="chatText" maxlength="1000" placeholder="Write a message"></textarea>
         <div class="btnrow">
           <label class="filebtn">📷 Add photo<input type="file" id="chatFile" accept="image/jpeg,image/png,image/webp" style="display:none"></label>
@@ -581,6 +588,7 @@ const ORIG = new WeakMap();      // text node -> original (English) value
 const ATTR_APPLIED = new WeakMap();
 const ATTR_ORIG = new WeakMap();
 const FR_DICT = {
+ "Our content.":"Notre contenu.","Through Bash Clips TV, we share short-form drama and entertainment that tell African stories.":"Avec Bash Clips TV, nous partageons des séries courtes et du divertissement qui racontent les histoires africaines.","Display name":"Nom d'affichage","Display name (shown to other members in the chat)":"Nom d'affichage (affiché aux autres membres dans le chat)",
  "Watch":"Regarder","Coins":"Pièces","Africa United":"Africa United","My membership":"Mon adhésion","Watch": "Regarder", "Coins": "Pièces", "Account": "Compte", "Sign in": "Se connecter", "Sign up (+50 coins)": "S'inscrire (+50 pièces)", "Continue with Google": "Continuer avec Google", "Browse as guest": "Parcourir en invité", "Email": "E-mail", "Password": "Mot de passe", "Create account (+50 coins)": "Créer un compte (+50 pièces)", "Language": "Langue", "Sign up gives you 50 coins.": "L'inscription vous offre 50 pièces.", "Terms": "Conditions", "Privacy": "Confidentialité", "Refunds": "Remboursements", "Parental guide": "Guide parental", "← Back to episodes": "← Retour aux épisodes", "← Back to coins": "← Retour aux pièces", "← Back to Watch": "← Retour à Regarder", "← Back to Africa United": "← Retour à Africa United", "← Back": "← Retour", "Back to Africa United": "Retour à Africa United", "Tap to watch": "Appuyer pour regarder", "Tap to unlock": "Appuyer pour débloquer", "Free": "Gratuit", "Locked": "Verrouillé", "Your balance": "Votre solde", "coins": "pièces", "Buy coins": "Acheter des pièces", "Coin wallet": "Portefeuille de pièces", "Signed in as": "Connecté en tant que", "Sign out": "Se déconnecter", "Profile photo": "Photo de profil", "Change photo": "Changer la photo", "JPG, PNG or WebP, under 2 MB. Accounts that sign in with Google use their Google photo.": "JPG, PNG ou WebP, moins de 2 Mo. Les comptes connectés avec Google utilisent leur photo Google.", "Membership": "Adhésion", "View and update your Africa United membership details.": "Consultez et mettez à jour les détails de votre adhésion Africa United.", "Manage membership": "Gérer l'adhésion", "Choose the language for the app.": "Choisissez la langue de l'application.", "Invite friends": "Inviter des amis", "Share my link": "Partager mon lien", "Help and rules": "Aide et règles", "User guide": "Guide d'utilisation", "Need help?": "Besoin d'aide ?", "If a payment or sign-in does not work, close the app, reopen it, and try again. If it still fails, contact support and include the time you tried.": "Si un paiement ou une connexion ne fonctionne pas, fermez l'application, rouvrez-la et réessayez. Si le problème persiste, contactez le support en indiquant l'heure de votre essai.", "Independent initiative": "Initiative indépendante", "AFRICA UNITED – BEYOND BORDERS": "AFRIQUE UNIE – AU-DELÀ DES FRONTIÈRES", "One People. Many Cultures. One Future.": "Un seul peuple. Plusieurs cultures. Un seul avenir.", "Africa United – Beyond Borders is an independent initiative connecting young Africans through cultural exchange, creative expression, digital storytelling, youth development and international collaboration.": "Africa United – Au-delà des frontières est une initiative indépendante qui relie les jeunes Africains à travers l'échange culturel, l'expression créative, la narration numérique, le développement de la jeunesse et la collaboration internationale.", "Our goal is to build bridges across African countries, celebrate our diversity and create opportunities for young people to work together.": "Notre objectif est de bâtir des ponts entre les pays africains, de célébrer notre diversité et de créer des opportunités pour que les jeunes travaillent ensemble.", "Discover Africa United": "Découvrir Africa United", "Explore Our Programmes": "Explorer nos programmes", "Watch Our Stories": "Regarder nos histoires", "About": "À propos", "Vision.": "Vision.", "Mission.": "Mission.", "Values.": "Valeurs.", "A connected Africa where young people move freely in ideas, culture and opportunity.": "Une Afrique connectée, où les jeunes circulent librement dans les idées, la culture et les opportunités.", "To create cross-border platforms for youth creativity, cultural exchange and digital storytelling.": "Créer des plateformes transfrontalières pour la créativité des jeunes, l'échange culturel et la narration numérique.", "Unity, respect for diversity, creativity, integrity and shared responsibility.": "Unité, respect de la diversité, créativité, intégrité et responsabilité partagée.", "Founder & Executive Director": "Fondateur et Directeur exécutif", "Featured programmes": "Programmes phares", "A. Cross-Border Youth Showcase": "A. Vitrine transfrontalière de la jeunesse", "A platform for young people to showcase their talents, cultures, creativity and achievements across African borders.": "Une plateforme permettant aux jeunes de présenter leurs talents, leurs cultures, leur créativité et leurs réalisations au-delà des frontières africaines.", "B. Our Culture, Our Story": "B. Notre culture, notre histoire", "Celebrating African traditions, languages, music, fashion, arts, heritage and cultural identity.": "Célébrer les traditions, langues, musiques, mode, arts, patrimoine et identité culturelle africains.", "C. African Digital Cinema": "C. Cinéma numérique africain", "Using film, animation, digital storytelling and creative media to share African stories with wider audiences.": "Utiliser le cinéma, l'animation, la narration numérique et les médias créatifs pour partager les histoires africaines avec un public plus large.", "D. Beyond Borders Youth Exchange": "D. Échange de jeunes au-delà des frontières", "Encouraging collaboration, friendship, cultural understanding and learning between young people from different African countries.": "Encourager la collaboration, l'amitié, la compréhension culturelle et l'apprentissage entre jeunes de différents pays africains.", "Participating countries": "Pays participants", "Countries (": "Pays (", "More countries will be listed here as they join.": "D'autres pays seront ajoutés ici au fur et à mesure de leur adhésion.", "Register or explore →": "S'inscrire ou explorer →", "Be the first to join": "Soyez le premier à rejoindre", "Loading members...": "Chargement des membres...", "THE AFRICA UNITED INTERNATIONAL FESTIVAL": "FESTIVAL INTERNATIONAL AFRICA UNITED", "A celebration of African unity, creativity, culture and youth collaboration, bringing people together beyond national borders.": "Une célébration de l'unité africaine, de la créativité, de la culture et de la collaboration des jeunes, qui rassemble les peuples au-delà des frontières nationales.", "Digital launch.": "Lancement numérique.", "Online cultural and creative showcases.": "Vitrines culturelles et créatives en ligne.", "Physical international festival.": "Festival international en présentiel.", "Announcements coming soon": "Annonces à venir bientôt", "Powered by Creativity. Connected Through Stories.": "Porté par la créativité. Connecté par les histoires.", "Bash Clips TV is the official media and production partner of Africa United – Beyond Borders.": "Bash Clips TV est le partenaire officiel en médias et production d'Africa United – Au-delà des frontières.", "Go to Bash Clips TV": "Aller sur Bash Clips TV", "Africa United – Beyond Borders is an independent initiative. Bash Clips TV is its media and production partner. No government or institution has endorsed this initiative. No event dates, venues or guests are confirmed yet.": "Africa United – Au-delà des frontières est une initiative indépendante. Bash Clips TV en est le partenaire médias et production. Aucun gouvernement ni aucune institution n'a approuvé cette initiative. Aucune date d'événement, lieu ou invité n'est encore confirmé.", "Sign in to register": "Se connecter pour s'inscrire", "Please sign in to register. Your membership request is linked to your account.": "Connectez-vous pour vous inscrire. Votre demande d'adhésion est liée à votre compte.", "Full name": "Nom complet", "Country": "Pays", "City or state": "Ville ou région", "Phone number (required, used to confirm your membership)": "Numéro de téléphone (obligatoire, utilisé pour confirmer votre adhésion)", "Areas you are interested in (optional)": "Domaines qui vous intéressent (facultatif)", "Send me updates about Africa United.": "M'envoyer des mises à jour sur Africa United.", "I confirm I am 18 years or older.": "Je confirme avoir 18 ans ou plus.", "I agree to the Terms & Conditions and Privacy Policy.": "J'accepte les Conditions générales et la Politique de confidentialité.", "Register as a member": "S'inscrire comme membre", "Cross-Border Youth Showcase": "Vitrine transfrontalière de la jeunesse", "Our Culture, Our Story": "Notre culture, notre histoire", "African Digital Cinema": "Cinéma numérique africain", "Beyond Borders Youth Exchange": "Échange de jeunes au-delà des frontières", "Explore": "Explorer", "Member hub": "Espace membre", "Languages": "Langues", "Music": "Musique", "Fashion": "Mode", "Arts and crafts": "Arts et artisanat", "Heritage and traditions": "Patrimoine et traditions", "Stories from members": "Témoignages de membres", "Coming soon": "Bientôt disponible", "Words, greetings and the languages spoken by members.": "Mots, salutations et langues parlées par les membres.", "Songs, rhythms and sounds from each country.": "Chansons, rythmes et sons de chaque pays.", "Traditional and modern dress, and the stories behind them.": "Tenues traditionnelles et modernes, et les histoires qui les accompagnent.", "Visual art, craft and design.": "Art visuel, artisanat et design.", "Festivals, customs and local history.": "Fêtes, coutumes et histoire locale.", "Short stories and experiences shared by members.": "Courts récits et expériences partagés par les membres.", "Movement updates": "Actualités du mouvement", "Manage my membership": "Gérer mon adhésion", "Update your basic details, or remove your membership. Your membership number is permanent.": "Mettez à jour vos informations de base ou supprimez votre adhésion. Votre numéro d'adhésion est permanent.", "Membership number": "Numéro d'adhésion", "Registered": "Inscrit le", "Status": "Statut", "Active member": "Membre actif", "Active": "Actif", "Personal details": "Informations personnelles", "Edit details": "Modifier les informations", "Save changes": "Enregistrer les modifications", "Cancel": "Annuler", "Phone number": "Numéro de téléphone", "Not added yet": "Pas encore ajouté", "Editing": "Modification", "✓ Saved": "✓ Enregistré", "Areas of interest and updates": "Centres d'intérêt et mises à jour", "Edit preferences": "Modifier les préférences", "Save preferences": "Enregistrer les préférences", "Delete my membership": "Supprimer mon adhésion", "Type DELETE to confirm": "Tapez DELETE pour confirmer", "This removes your membership and its details from our records. Your phone number and email become available again for future registration. Your membership number is never reused. This cannot be undone.": "Cela supprime votre adhésion et ses informations de nos registres. Votre numéro de téléphone et votre e-mail redeviennent disponibles pour une future inscription. Votre numéro d'adhésion n'est jamais réutilisé. Cette action est irréversible.", "Updates about Africa United": "Mises à jour sur Africa United"};
 const TRANSLATE_ATTRS = ['placeholder', 'title', 'aria-label'];
 
@@ -864,12 +872,22 @@ function chatItem(m) {
       <button type="button" class="lk${liked ? ' on' : ''}" onclick="event.stopPropagation();toggleLike('${esc(m.id)}')">👍 Like <span class="lc">${Number(m.like_count) || 0}</span></button>
       <button type="button" onclick="event.stopPropagation();shareMsg('${esc(m.id)}')">↗ Share</button>
       <button type="button" class="sv${saved ? ' on' : ''}" onclick="event.stopPropagation();toggleSave('${esc(m.id)}')">${saved ? '🔖 Saved' : '🔖 Save'}</button>
+      <button type="button" onclick="event.stopPropagation();toggleComments('${esc(m.id)}')">💬 Comment <span class="cc">${Number(m.comment_count) || 0}</span></button>
+    </div>`;
+  const panel = `<div class="cpanel" hidden data-for="${esc(m.id)}" onclick="event.stopPropagation()">
+      <div class="clist"></div>
+      <div class="cform">
+        <input class="cin" type="text" maxlength="500" placeholder="Write a comment">
+        <button type="button" onclick="sendComment('${esc(m.id)}')">Send</button>
+      </div>
+      <div class="msg cmsg"></div>
     </div>`;
   return `<div class="brow ${mine ? 'mine' : 'theirs'}" data-id="${esc(m.id)}">
     <div class="bubble"${mine ? '' : ' onclick="toggleActions(this)"'}>
       ${who}${text}${photo}
       <div class="btime">${esc(chatTime(m.created_at))}</div>
       ${acts}
+      ${panel}
       ${report}
     </div>
   </div>`;
@@ -878,6 +896,77 @@ window.toggleActions = el => {
   const a = el.querySelector('.bactions');
   if (a) a.hidden = !a.hidden;
 };
+function commentHTML(c) {
+  const mine = c.user_id === (user && user.id);
+  const action = mine
+    ? `<button type="button" class="cbtn" onclick="event.stopPropagation();deleteComment('${esc(c.id)}')">Delete</button>`
+    : `<button type="button" class="cbtn" onclick="event.stopPropagation();reportComment('${esc(c.id)}')">Report</button>`;
+  return `<div class="cit" data-cid="${esc(c.id)}">
+    <span class="cwho">${esc(c.author_name || 'Member')}</span> <span>${esc(c.body)}</span>
+    <div class="cmeta">${esc(chatTime(c.created_at))} · ${action}</div>
+  </div>`;
+}
+function commentPanel(mid) {
+  return document.querySelector(`.cpanel[data-for="${mid}"]`);
+}
+function appendComment(c) {
+  const panel = commentPanel(c.message_id);
+  if (!panel || panel.hidden) return;
+  const list = panel.querySelector('.clist');
+  if (list.querySelector(`[data-cid="${c.id}"]`)) return;
+  const note = list.querySelector('.cnone');
+  if (note) note.remove();
+  list.insertAdjacentHTML('beforeend', commentHTML(c));
+  list.scrollTop = list.scrollHeight;
+}
+window.toggleComments = async mid => {
+  const panel = commentPanel(mid);
+  if (!panel) return;
+  if (!panel.hidden) { panel.hidden = true; return; }
+  panel.hidden = false;
+  const list = panel.querySelector('.clist');
+  list.innerHTML = '<p class="muted cnone">Loading comments...</p>';
+  const { data, error } = await sb.from('africa_comments')
+    .select('id, message_id, user_id, author_name, body, created_at')
+    .eq('message_id', mid).order('created_at').limit(200);
+  if (error) {
+    step('comments load error: ' + error.message);
+    list.innerHTML = '<p class="muted cnone">Comments could not be loaded.</p>';
+    return;
+  }
+  list.innerHTML = (data || []).map(commentHTML).join('') || '<p class="muted cnone">No comments yet. Be the first.</p>';
+  panel.querySelector('.cin').focus();
+};
+window.sendComment = async mid => {
+  const panel = commentPanel(mid);
+  const input = panel.querySelector('.cin');
+  const text = input.value.trim();
+  const msg = panel.querySelector('.cmsg');
+  if (!text) { msg.textContent = 'Write a comment first.'; return; }
+  const { data, error } = await sb.from('africa_comments')
+    .insert({ message_id: mid, user_id: user.id, body: text })
+    .select('id, message_id, user_id, author_name, body, created_at').single();
+  if (error) {
+    step('comment error: ' + error.message);
+    msg.textContent = 'Your comment could not be posted. Please try again.';
+    return;
+  }
+  input.value = '';
+  msg.textContent = '';
+  appendComment(data);
+};
+window.deleteComment = async cid => {
+  const { error } = await sb.from('africa_comments').delete().eq('id', cid).eq('user_id', user.id);
+  if (error) { step('comment delete error: ' + error.message); say('chatMsg', 'Could not delete the comment.'); return; }
+  const el = document.querySelector(`.cit[data-cid="${cid}"]`);
+  if (el) el.remove();
+};
+window.reportComment = async cid => {
+  const { error } = await sb.from('africa_reports').insert({ comment_id: cid, reporter_id: user.id });
+  if (error && error.code !== '23505') { step('report error: ' + error.message); say('chatMsg', 'The report could not be sent.'); return; }
+  say('chatMsg', 'Thank you. This comment has been reported for review.');
+};
+
 var myLikes = new Set();
 var mySaves = new Set();
 async function loadMyEngagement() {
@@ -961,11 +1050,9 @@ async function openChat(code) {
   if (!user) return;
   chatCode = code;
   say('chatMsg', '');
-  const { data: me } = await sb.from('africa_members').select('display_name').eq('user_id', user.id).maybeSingle();
-  $('chatName').value = me?.display_name || '';
   await loadMyEngagement();
   const { data, error } = await sb.from('africa_messages')
-    .select('id, user_id, author_name, body, media_path, created_at, like_count')
+    .select('id, user_id, author_name, body, media_path, created_at, like_count, comment_count')
     .eq('hidden', false)
     .order('created_at', { ascending: false }).limit(50);
   if (error) {
@@ -987,18 +1074,20 @@ async function openChat(code) {
       box.scrollTop = box.scrollHeight;
     })
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'africa_messages' }, payload => {
-      const el = document.querySelector(`.brow[data-id="${payload.new.id}"] .lc`);
-      if (el) el.textContent = Number(payload.new.like_count) || 0;
+      const row = document.querySelector(`.brow[data-id="${payload.new.id}"]`);
+      if (!row) return;
+      const lc = row.querySelector('.lc');
+      if (lc) lc.textContent = Number(payload.new.like_count) || 0;
+      const cc = row.querySelector('.cc');
+      if (cc) cc.textContent = Number(payload.new.comment_count) || 0;
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'africa_comments' }, payload => appendComment(payload.new))
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'africa_comments' }, payload => {
+      const el = document.querySelector(`.cit[data-cid="${payload.old.id}"]`);
+      if (el) el.remove();
     })
     .subscribe();
 }
-$('chatSaveName').onclick = async () => {
-  const name = $('chatName').value.trim();
-  if (!name) { say('chatMsg', 'Please enter a display name.'); return; }
-  const { error } = await sb.from('africa_members').update({ display_name: name }).eq('user_id', user.id);
-  say('chatMsg', error ? 'Your name could not be saved. Please try again.' : 'Your display name has been saved.');
-  if (error) step('display name error: ' + error.message);
-};
 $('chatSend').onclick = async () => {
   const text = $('chatText').value.trim();
   const file = $('chatFile').files[0];
@@ -1213,6 +1302,8 @@ function renderManage(m, keepState) {
   const detailsBody = manageUI.details === 'edit'
     ? `<label for="mFullName">Full name</label>
        <input id="mFullName" type="text" value="${esc(m.full_name)}">
+       <label for="mDisplay">Display name (shown to other members in the chat)</label>
+       <input id="mDisplay" type="text" maxlength="40" value="${esc(m.display_name || '')}">
        <label for="mCity">City or state</label>
        <input id="mCity" type="text" value="${esc(m.city || '')}">
        <label>Phone number (required)</label>
@@ -1224,6 +1315,7 @@ function renderManage(m, keepState) {
        <div class="msg" id="mMsg"></div>`
     : `<dl class="kv">
          <dt>Full name</dt><dd>${esc(m.full_name)}</dd>
+         <dt>Display name</dt><dd>${esc(m.display_name || '—')}</dd>
          <dt>City or state</dt><dd>${esc(m.city || '—')}</dd>
          <dt>Phone number</dt><dd>${esc(phoneShown)}</dd>
          <dt>Email</dt><dd>${esc(maskEmail(m.email))}</dd>
@@ -1296,7 +1388,7 @@ async function saveDetails() {
   if (!phone) { say('mMsg', 'Please enter a valid phone number, without the country code.'); return; }
   $('mSave').disabled = true;
   const { data, error } = await sb.from('africa_members')
-    .update({ full_name: name, city: $('mCity').value.trim() || null, phone })
+    .update({ full_name: name, display_name: $('mDisplay').value.trim() || name.split(' ')[0], city: $('mCity').value.trim() || null, phone })
     .eq('user_id', user.id).select('*').single();
   $('mSave').disabled = false;
   if (error) {
