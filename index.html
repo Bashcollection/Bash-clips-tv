@@ -281,6 +281,10 @@
   .bact b{font-weight:700}
   .brow.mine .bact button.on{color:#FDE68A}
   img.av{object-fit:cover;background:#1E293B}
+  .avw{position:relative;width:34px;height:34px;flex:0 0 34px;display:inline-block;margin-top:2px}
+  .avw .av{margin:0}
+  .avw .dot{display:none;position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border-radius:50%;background:#22C55E;border:2px solid #0B1222}
+  .avw.on .dot{display:block}
 </style>
 </head>
 <body>
@@ -322,6 +326,8 @@
     <div class="sheet-head"><strong>Comments</strong><button type="button" class="sheet-x" onclick="closeComments()" aria-label="Close">✕</button></div>
     <div class="sheet-list" id="cmtList"></div>
     <div class="sheet-form">
+      <label class="plus" for="cmtFile" title="Add photo">+</label>
+      <input type="file" id="cmtFile" accept="image/jpeg,image/png,image/webp" style="display:none">
       <input id="cmtText" type="text" maxlength="500" placeholder="Write a comment">
       <button type="button" class="send-round" id="cmtSend" aria-label="Send comment"><svg viewBox="0 0 24 24"><path d="M3 11.5 21 3l-8.5 18-2.2-7.3z"/></svg></button>
     </div>
@@ -333,7 +339,7 @@
 <section id="scr-chat" class="hidden">
   <div class="chathead">
     <button type="button" class="alt" id="chatBack">← Back</button>
-    <div><strong>Member chat</strong><span class="muted">All Africa United members</span></div>
+    <div><strong>Member chat</strong><span class="muted" id="chatSub">All Africa United members</span></div>
   </div>
   <div class="chatbox chatpage" id="chatList"></div>
   <div class="chatcomposer">
@@ -943,10 +949,33 @@ const ICO = {
   save: '<svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg>',
   comment: '<svg viewBox="0 0 24 24"><path d="M21 12a8.5 8.5 0 0 1-12.4 7.5L3 21l1.6-5A8.5 8.5 0 1 1 21 12z"/></svg>',
 };
-function avatarPic(url, name) {
-  return url
+function avatarPic(url, name, uid) {
+  const inner = url
     ? `<img class="av" src="${esc(url)}" alt="" referrerpolicy="no-referrer">`
     : `<div class="av">${esc(initialsOf(name))}</div>`;
+  return `<span class="avw" data-uid="${esc(uid || '')}">${inner}<i class="dot"></i></span>`;
+}
+var presenceCh = null;
+var onlineIds = new Set();
+function startPresence() {
+  if (presenceCh || !user) return;
+  presenceCh = sb.channel('africa-online', { config: { presence: { key: user.id } } });
+  presenceCh.on('presence', { event: 'sync' }, () => {
+    onlineIds = new Set(Object.keys(presenceCh.presenceState()));
+    paintPresence();
+  }).subscribe(async status => {
+    if (status === 'SUBSCRIBED') await presenceCh.track({ online: true });
+  });
+}
+function stopPresence() {
+  if (presenceCh) { sb.removeChannel(presenceCh); presenceCh = null; }
+  onlineIds = new Set();
+  paintPresence();
+}
+function paintPresence() {
+  document.querySelectorAll('.avw').forEach(el => el.classList.toggle('on', onlineIds.has(el.dataset.uid)));
+  const sub = $('chatSub');
+  if (sub) sub.textContent = `All Africa United members · ${onlineIds.size} online`;
 }
 function initialsOf(name) {
   const parts = String(name || 'M').trim().split(/\s+/).filter(Boolean);
@@ -975,7 +1004,7 @@ function chatItem(m) {
       </div>
       <div class="msg cmsg"></div>
     </div>`;
-  const av = mine ? '' : avatarPic(m.author_avatar, m.author_name);
+  const av = mine ? '' : avatarPic(m.author_avatar, m.author_name, m.user_id);
   return `<div class="brow ${mine ? 'mine' : 'theirs'}" data-id="${esc(m.id)}">${av}
     <div class="bubble"${mine ? '' : ' onclick="toggleActions(this)"'}>
       ${who}${text}${photo}
@@ -996,10 +1025,10 @@ function commentHTML(c) {
     ? `<button type="button" class="cbtn" onclick="deleteComment('${esc(c.id)}')">Delete</button>`
     : `<button type="button" class="cbtn" onclick="reportComment('${esc(c.id)}')">Report</button>`;
   return `<div class="cmt" data-cid="${esc(c.id)}">
-    ${avatarPic(c.author_avatar, c.author_name)}
+    ${avatarPic(c.author_avatar, c.author_name, c.user_id)}
     <div class="cbody">
       <div class="cwho">${esc(c.author_name || 'Member')}</div>
-      <div class="ctext">${esc(c.body)}</div>
+      ${c.body ? `<div class="ctext">${esc(c.body)}</div>` : ''}${c.media_path ? `<img data-path="${esc(c.media_path)}" alt="Photo" style="max-width:220px;border-radius:12px;margin-top:6px;display:block">` : ''}
       <div class="cmeta"><span>${esc(chatTime(c.created_at))}</span>${action}</div>
     </div>
   </div>`;
@@ -1011,6 +1040,8 @@ function appendComment(c) {
   const note = list.querySelector('.cnone');
   if (note) note.remove();
   list.insertAdjacentHTML('beforeend', commentHTML(c));
+  loadChatPhotos(list);
+  paintPresence();
   list.scrollTop = list.scrollHeight;
 }
 window.toggleComments = async mid => {
@@ -1019,7 +1050,7 @@ window.toggleComments = async mid => {
   $('cmtMsg').textContent = '';
   $('cmtList').innerHTML = '<p class="muted cnone">Loading comments...</p>';
   const { data, error } = await sb.from('africa_comments')
-    .select('id, message_id, user_id, author_name, author_avatar, body, created_at')
+    .select('id, message_id, user_id, author_name, author_avatar, body, media_path, created_at')
     .eq('message_id', mid).order('created_at').limit(200);
   if (currentCmt !== mid) return;
   if (error) {
@@ -1028,6 +1059,8 @@ window.toggleComments = async mid => {
     return;
   }
   $('cmtList').innerHTML = (data || []).map(commentHTML).join('') || '<p class="muted cnone">No comments yet. Be the first to comment.</p>';
+  loadChatPhotos($('cmtList'));
+  paintPresence();
   $('cmtText').focus();
 };
 window.closeComments = () => {
@@ -1037,12 +1070,29 @@ window.closeComments = () => {
 async function sendComment() {
   const input = $('cmtText');
   const text = input.value.trim();
+  const file = $('cmtFile').files[0];
   if (!currentCmt || !user) return;
-  if (!text) { say('cmtMsg', 'Write a comment first.'); return; }
+  if (!text && !file) { say('cmtMsg', 'Write a comment or add a photo.'); return; }
+  if (text.length > 500) { say('cmtMsg', 'Comments can be up to 500 characters.'); return; }
+  if (file && !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { say('cmtMsg', 'Please choose a JPG, PNG or WebP photo.'); return; }
+  if (file && file.size > 5 * 1024 * 1024) { say('cmtMsg', 'Please choose a photo under 5 MB.'); return; }
   $('cmtSend').disabled = true;
+  let media_path = null;
+  if (file) {
+    const small = await shrinkImage(file);
+    const path = `${chatCode}/${user.id}/${crypto.randomUUID()}.jpg`;
+    const up = await sb.storage.from('africa-media').upload(path, small, { contentType: 'image/jpeg' });
+    if (up.error) {
+      step('comment photo upload error: ' + up.error.message);
+      $('cmtSend').disabled = false;
+      say('cmtMsg', 'The photo could not be uploaded. Please try again.');
+      return;
+    }
+    media_path = path;
+  }
   const { data, error } = await sb.from('africa_comments')
-    .insert({ message_id: currentCmt, user_id: user.id, body: text })
-    .select('id, message_id, user_id, author_name, author_avatar, body, created_at').single();
+    .insert({ message_id: currentCmt, user_id: user.id, body: text || null, media_path })
+    .select('id, message_id, user_id, author_name, author_avatar, body, media_path, created_at').single();
   $('cmtSend').disabled = false;
   if (error) {
     step('comment error: ' + error.message);
@@ -1050,9 +1100,14 @@ async function sendComment() {
     return;
   }
   input.value = '';
+  $('cmtFile').value = '';
   say('cmtMsg', '');
   appendComment(data);
 }
+$('cmtFile').onchange = () => {
+  const f = $('cmtFile').files[0];
+  say('cmtMsg', f ? '📷 ' + f.name : '');
+};
 $('cmtSend').onclick = () => sendComment();
 $('cmtText').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); sendComment(); } };
 window.deleteComment = async cid => {
@@ -1166,6 +1221,7 @@ async function openChat(code) {
   } else {
     $('chatList').innerHTML = (data || []).reverse().map(chatItem).join('') || '<p class="muted">No messages yet. Start the conversation.</p>';
     loadChatPhotos($('chatList'));
+    paintPresence();
     $('chatList').scrollTop = $('chatList').scrollHeight;
   }
   chatChannel = sb.channel('africa-chat-general')
@@ -1176,6 +1232,7 @@ async function openChat(code) {
       if (box.querySelector('p.muted')) box.innerHTML = '';
       box.insertAdjacentHTML('beforeend', chatItem(m));
       loadChatPhotos(box);
+      paintPresence();
       box.scrollTop = box.scrollHeight;
     })
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'africa_messages' }, payload => {
@@ -1716,12 +1773,14 @@ async function route(session) {
   clearTimeout(fallbackTimer); fallbackTimer = null;
   if (!session?.user) {
     user = null; token = null; shownFor = null;
+    stopPresence();
     step('no session: showing sign-in');
     $('shell').classList.add('hidden');
     go('scr-auth');
     return;
   }
   user = session.user; token = session.access_token;
+  startPresence();
   if (shownFor === user.id) return;
   shownFor = user.id;
   step('signed in as ' + user.email);
