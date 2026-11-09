@@ -565,9 +565,12 @@
     <div class="card plain">
       <h2>Profile photo</h2>
       <div id="acctAvatar" style="display:flex;justify-content:center;margin:10px 0"></div>
-      <label for="avFile">Change photo</label>
-      <input type="file" id="avFile" accept="image/jpeg,image/png,image/webp">
-      <p class="muted">JPG, PNG or WebP, under 2 MB. Accounts that sign in with Google use their Google photo.</p>
+      <div id="avUploadBox">
+        <label for="avFile">Change photo</label>
+        <input type="file" id="avFile" accept="image/jpeg,image/png,image/webp">
+        <p class="muted">JPG, PNG or WebP, under 2 MB.</p>
+      </div>
+      <p class="muted" id="avGoogleNote" hidden>Your photo comes from your Google account. To change it, update your profile picture in Google.</p>
       <div class="msg" id="avMsg"></div>
     </div>
     <div class="card plain">
@@ -1440,8 +1443,15 @@ function avatarHTML(size) {
   // The signed-in member is always shown as online while the app is open
   return `<span class="avw on" data-uid="${esc(user?.id || '')}" style="position:relative;display:inline-block;width:${size}px;height:${size}px;flex:0 0 ${size}px;margin-top:0">${inner}<i class="dot" style="width:${d}px;height:${d}px"></i></span>`;
 }
+function isGoogleAccount() {
+  const ids = user?.identities || [];
+  return user?.app_metadata?.provider === 'google' || ids.some(i => i.provider === 'google');
+}
 function renderAvatars() {
   if (!user) return;
+  const google = isGoogleAccount();
+  $('avUploadBox').hidden = google;
+  $('avGoogleNote').hidden = !google;
   const sizes = { topAvatar: 34, acctAvatar: 84, hubAvatar: 48 };
   Object.entries(sizes).forEach(([id, size]) => { const el = $(id); if (el) el.innerHTML = avatarHTML(size); });
   paintPresence();
