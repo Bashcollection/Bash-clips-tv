@@ -973,9 +973,11 @@ function stopPresence() {
   paintPresence();
 }
 function paintPresence() {
-  document.querySelectorAll('.avw').forEach(el => el.classList.toggle('on', onlineIds.has(el.dataset.uid)));
+  const ids = new Set(onlineIds);
+  if (user) ids.add(user.id);
+  document.querySelectorAll('.avw').forEach(el => el.classList.toggle('on', ids.has(el.dataset.uid)));
   const sub = $('chatSub');
-  if (sub) sub.textContent = `All Africa United members · ${onlineIds.size} online`;
+  if (sub) sub.textContent = `All Africa United members · ${ids.size} online`;
 }
 function initialsOf(name) {
   const parts = String(name || 'M').trim().split(/\s+/).filter(Boolean);
@@ -1431,13 +1433,18 @@ function initials() {
 function avatarHTML(size) {
   const url = avatarUrl();
   const base = `width:${size}px;height:${size}px;border-radius:50%;flex:0 0 ${size}px;border:2px solid rgba(201,162,39,.6);`;
-  if (url) return `<img src="${esc(url)}" alt="Profile photo" referrerpolicy="no-referrer" style="${base}object-fit:cover">`;
-  return `<span style="${base}display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#3B82F6,#4F46E5);color:#fff;font-weight:700;font-size:${Math.round(size * 0.36)}px;font-family:system-ui,-apple-system,sans-serif">${esc(initials())}</span>`;
+  const inner = url
+    ? `<img src="${esc(url)}" alt="Profile photo" referrerpolicy="no-referrer" style="${base}object-fit:cover">`
+    : `<span style="${base}display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#3B82F6,#4F46E5);color:#fff;font-weight:700;font-size:${Math.round(size * 0.36)}px;font-family:system-ui,-apple-system,sans-serif">${esc(initials())}</span>`;
+  const d = Math.max(9, Math.round(size * 0.3));
+  // The signed-in member is always shown as online while the app is open
+  return `<span class="avw on" data-uid="${esc(user?.id || '')}" style="position:relative;display:inline-block;width:${size}px;height:${size}px;flex:0 0 ${size}px;margin-top:0">${inner}<i class="dot" style="width:${d}px;height:${d}px"></i></span>`;
 }
 function renderAvatars() {
   if (!user) return;
   const sizes = { topAvatar: 34, acctAvatar: 84, hubAvatar: 48 };
   Object.entries(sizes).forEach(([id, size]) => { const el = $(id); if (el) el.innerHTML = avatarHTML(size); });
+  paintPresence();
 }
 async function uploadAvatar(file) {
   if (!user || !file) return;
