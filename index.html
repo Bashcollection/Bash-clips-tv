@@ -244,8 +244,8 @@
   .chatcomposer .btnrow{margin-top:6px}
   .bubble{max-width:86%}
   .bact button{font-size:.66rem;white-space:normal;line-height:1.2;overflow:visible;text-overflow:clip}
-  .av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#3B82F6,#4F46E5);color:#fff;font-weight:700;font-size:.8rem;display:inline-flex;align-items:center;justify-content:center;flex:0 0 34px;letter-spacing:.02em}
-  .brow.theirs{align-items:flex-end;gap:8px}
+  .av{width:34px;height:34px;border-r
+      .brow.theirs{align-items:flex-end;gap:8px}
   .brow .av{margin-bottom:2px}
   .cmp-compact{display:flex;align-items:center;gap:10px}
   .cmp-open{flex:1;text-align:left;margin:0;background:rgba(30,41,59,.85);border:1px solid var(--border);border-radius:24px;padding:13px 18px;color:var(--muted);font-weight:500;box-shadow:none}
@@ -288,6 +288,11 @@
 </style>
 </head>
 <body>
+<div id="boot" style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0B1222;color:#E5E7EB;font-family:system-ui,-apple-system,sans-serif;z-index:100;text-align:center;padding:20px">
+  <strong style="font-size:1.1rem">Loading Bash Clips TV…</strong>
+  <span style="font-size:.9rem;opacity:.8">This can take a moment on a slow connection.</span>
+  <span style="font-size:.85rem;opacity:.7">Chargement de Bash Clips TV… Cela peut prendre un moment sur une connexion lente.</span>
+</div>
 <div id="splash"><img src="logo.webp" alt="Bash Clips TV"></div>
 
 <!-- Sign-in screen -->
@@ -390,7 +395,7 @@
 
   <!-- Watch: episode list -->
   <section id="scr-watch">
-    <div id="list"></div>
+      <div id="list"></div>
     <div class="msg" id="listMsg"></div>
   </section>
 
@@ -540,7 +545,7 @@
     </div>
     <div class="afr-section">
       <h2>Movement updates</h2>
-      <p><span class="soon">Announcements coming soon</span></p>
+            <p><span class="soon">Announcements coming soon</span></p>
     </div>
   </section>
 
@@ -610,13 +615,31 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://checkout.flutterwave.com/v3.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/plyr@3.7.8/dist/plyr.polyfilled.js"></script>
 <script>
 const SB_URL = 'https://wmoquxhnaoxeukoxfjod.supabase.co';
 const SB_KEY = 'sb_publishable_OO9rGuagJDlgwynMUKrNmw_dOXok8Rz';
 const FLW_PUBLIC = 'FLWPUBK-52f32e15b02edeba097cfad41e73a8f3-X';
 const sb = supabase.createClient(SB_URL, SB_KEY);
+const libLoads = {};
+function loadScript(src) {
+  if (!libLoads[src]) {
+    libLoads[src] = new Promise((resolve, reject) => {
+      const el = document.createElement('script');
+      el.src = src;
+      el.onload = resolve;
+      el.onerror = () => { delete libLoads[src]; reject(new Error('load failed: ' + src)); };
+      document.body.appendChild(el);
+    });
+  }
+  return libLoads[src];
+}
+const PLYR_SRC = 'https://cdn.jsdelivr.net/npm/plyr@3.7.8/dist/plyr.polyfilled.js';
+const FLW_SRC = 'https://checkout.flutterwave.com/v3.js';
+async function ensureFlutterwave() {
+  if (typeof FlutterwaveCheckout === 'function') return true;
+  try { await loadScript(FLW_SRC); } catch (err) { step(err.message); }
+  return typeof FlutterwaveCheckout === 'function';
+}
 
 // Display only. The server holds the real prices and coin amounts.
 const PACKS = [
@@ -672,7 +695,7 @@ function tr(key) {
 let observerStarted = false;
 const APPLIED = new WeakMap();   // text node -> last value written by the translator
 const ORIG = new WeakMap();      // text node -> original (English) value
-const ATTR_APPLIED = new WeakMap();
+  const ATTR_APPLIED = new WeakMap();
 const ATTR_ORIG = new WeakMap();
 const FR_DICT = {
  "Our content.":"Notre contenu.","Through Bash Clips TV, we share short-form drama and entertainment that tell African stories.":"Avec Bash Clips TV, nous partageons des séries courtes et du divertissement qui racontent les histoires africaines.","Display name":"Nom d'affichage","Display name (shown to other members in the chat)":"Nom d'affichage (affiché aux autres membres dans le chat)",
@@ -822,7 +845,7 @@ const DOCS = {
     <h3>Buy coins</h3>
     <p>Tap your coin balance at the top. Choose Naira or USD, pick a pack, and pay on the secure Flutterwave page.</p>
     <h3>Player</h3>
-    <p>Use Full screen to fill the screen. Turn your phone sideways for landscape. Minimize keeps the video small in the corner while you browse. Close stops it.</p>
+      <p>Use Full screen to fill the screen. Turn your phone sideways for landscape. Minimize keeps the video small in the corner while you browse. Close stops it.</p>
     <h3>Invite friends</h3>
     <p>Open Account and tap Share my link. When a friend signs up with your link, you receive 50 coins and they receive 50 coins.</p>`,
   parental: `
@@ -972,7 +995,7 @@ function startPresence() {
 }
 function stopPresence() {
   if (presenceCh) { sb.removeChannel(presenceCh); presenceCh = null; }
-  onlineIds = new Set();
+    onlineIds = new Set();
   paintPresence();
 }
 function paintPresence() {
@@ -1122,7 +1145,7 @@ window.deleteComment = async cid => {
   if (el) el.remove();
 };
 window.reportComment = async cid => {
-  const { error } = await sb.from('africa_reports').insert({ comment_id: cid, reporter_id: user.id });
+    const { error } = await sb.from('africa_reports').insert({ comment_id: cid, reporter_id: user.id });
   if (error && error.code !== '23505') { step('report error: ' + error.message); say('cmtMsg', 'The report could not be sent.'); return; }
   say('cmtMsg', 'Thank you. This comment has been reported for review.');
 };
@@ -1272,7 +1295,7 @@ $('chatFile').onchange = () => {
   const f = $('chatFile').files[0];
   $('chatFileName').textContent = f ? '📷 ' + f.name : '';
   if (f) showComposer();
-};
+  };
 window.openChatPage = () => {
   if (!currentHub) return;
   go('scr-chat');
@@ -1422,7 +1445,7 @@ $('manageBack').onclick = () => go('scr-africa');
 $('acctBack').onclick = () => go('scr-watch');
 $('avFile').onchange = e => uploadAvatar(e.target.files[0]);
 
-// Profile photo: Google photo if signed in with Google, otherwise an uploaded photo, otherwise initials.
+ // Profile photo: Google photo if signed in with Google, otherwise an uploaded photo, otherwise initials.
 function avatarUrl() {
   const m = user?.user_metadata || {};
   return m.avatar_url || m.picture || null;
@@ -1572,7 +1595,7 @@ function renderManage(m, keepState) {
       <h2>Delete my membership</h2>
       <p class="muted">This removes your membership and its details from our records. Your phone number and email become available again for future registration. Your membership number is never reused. This cannot be undone.</p>
       <label for="mConfirm">Type DELETE to confirm</label>
-      <input id="mConfirm" type="text" autocomplete="off">
+        <input id="mConfirm" type="text" autocomplete="off">
       <button type="button" class="danger" id="mDelete">Delete my membership</button>
       <div class="msg" id="mMsg3"></div>
     </div>`;
@@ -1707,17 +1730,25 @@ function step(text) {
 /* ---------- Shared player ---------- */
 let playerMode = 'none';   // 'none' | 'full' | 'mini'
 const pv = $('pv');
-const player = (typeof Plyr !== 'undefined') ? new Plyr(pv, {
+let player = null;
+async function ensurePlayer() {
+  if (player) return player;
+  try { await loadScript(PLYR_SRC); } catch (err) { step(err.message); }
+  if (typeof Plyr === 'undefined') return null;
+  player = new Plyr(pv, {
   controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'settings', 'fullscreen'],
   settings: ['speed'],
   speed: { selected: 1, options: [0.5, 1, 1.25, 1.5, 2] },
-}) : null;
+  });
+  return player;
+}
 pv.addEventListener('error', () => {
   step('video failed to load');
   say('epMsg', 'This video could not play. Please try again later.');
-});
-function loadVideo(url) {
-  if (player) player.source = { type: 'video', sources: [{ src: url, type: 'video/mp4' }] };
+  });
+async function loadVideo(url) {
+  const p = await ensurePlayer();
+  if (p) p.source = { type: 'video', sources: [{ src: url, type: 'video/mp4' }] };
   else { pv.src = url; pv.load(); }
 }
 function applyPlayer() {
@@ -1864,7 +1895,7 @@ $('authGo').onclick = async () => {
   }
 };
 $('google').onclick = () => sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin } });
-$('guest').onclick = () => { step('browsing as guest'); $('shell').classList.remove('hidden'); loadCatalog(); go('scr-watch'); };
+  $('guest').onclick = () => { step('browsing as guest'); $('shell').classList.remove('hidden'); loadCatalog(); go('scr-watch'); };
 
 /* ---------- Tabs ---------- */
 $('tWatch').onclick = () => { go('scr-watch'); loadCatalog(); };
@@ -1993,7 +2024,7 @@ window.buy = async packId => {
   step('buy tapped: ' + packId + ' ' + cur);
   if (!user) { say('payMsg', 'Sign in to buy coins.'); return; }
   say('payMsg', 'Preparing payment...');
-  if (typeof FlutterwaveCheckout !== 'function') {
+  if (!(await ensureFlutterwave())) {
     step('Flutterwave script not loaded');
     say('payMsg', 'Payment window could not load. Check your connection and refresh.');
     return;
@@ -2014,7 +2045,7 @@ window.buy = async packId => {
     say('payMsg', '');
     FlutterwaveCheckout({
       public_key: FLW_PUBLIC,
-      tx_ref: p.tx_ref,
+        tx_ref: p.tx_ref,
       amount: p.amount,
       currency: p.currency,
       payment_options: cur === 'NGN' ? 'banktransfer,card,ussd' : 'card',
@@ -2050,6 +2081,8 @@ window.buy = async packId => {
 $('tAfrica').onclick = () => openAfrica();
 applyLang();
 step('page loaded');
+const boot = document.getElementById('boot');
+if (boot) boot.remove();
 initConsent();
 if (new URLSearchParams(location.search).get('page') === 'africa') {
   setTimeout(() => openAfrica(), 3000);
