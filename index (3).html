@@ -1,0 +1,2096 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bash Clips TV</title>
+<link rel="icon" href="logo.webp">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/plyr@3.7.8/dist/plyr.css">
+<style>
+  :root{
+    --surface:#1E293B; --surface-glass:rgba(30,41,59,.82);
+    --border:rgba(51,65,85,.6); --border-hi:rgba(148,163,184,.18);
+    --blue:#3B82F6; --indigo:#4F46E5; --sky:#60A5FA;
+    --emerald:#34D399;
+    --text:#FFFFFF; --text-2:#CBD5E1; --muted:#94A3B8;
+    color-scheme: dark;
+    --sunray: repeating-conic-gradient(from 0deg at 50% 28%, rgba(255,255,255,.05) 0deg 3deg, transparent 3deg 12deg, rgba(96,165,250,.07) 12deg 15deg, transparent 15deg 24deg),
+      linear-gradient(115deg, transparent 35%, rgba(255,255,255,.08) 48%, transparent 60%),
+      radial-gradient(60% 45% at 50% 28%, rgba(59,130,246,.38), transparent 70%),
+      radial-gradient(50% 40% at 88% 82%, rgba(239,68,68,.26), transparent 70%),
+      linear-gradient(170deg, #111B33 0%, #0F172A 55%, #0B1222 100%);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--sunray);background-attachment:fixed}
+
+  #splash{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--sunray);transition:opacity .4s;z-index:9}
+  #splash img{width:200px;max-width:60vw;filter:drop-shadow(0 0 28px rgba(59,130,246,.45));animation:float 3s ease-in-out infinite}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+  .hidden{display:none!important}
+  .wrap{max-width:520px;margin:0 auto;padding:0 16px 40px}
+
+  /* Top bar */
+  .topbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    margin:0 -16px 12px;padding:14px 16px;background:linear-gradient(180deg,rgba(30,41,59,.9),rgba(15,23,42,.75));
+    border-bottom:1px solid var(--border);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+  .brand-title{font-weight:800;background:linear-gradient(90deg,#FFFFFF 0%,#93C5FD 50%,#818CF8 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .balchip{width:auto;margin:0;padding:8px 14px;font-size:.9rem;border-radius:999px}
+
+  /* Tabs */
+  .tabs{display:flex;gap:8px;margin:0 0 14px}
+  .tabs button{flex:1;margin:0}
+
+  input{font:inherit;width:100%;padding:12px 14px;margin:6px 0;border-radius:12px;color:var(--text);background:rgba(15,23,42,.7);border:1px solid rgba(71,85,105,.6);box-shadow:inset 0 2px 6px rgba(0,0,0,.45)}
+  input::placeholder{color:var(--muted)}
+  input:focus{outline:none;border-color:var(--blue);box-shadow:inset 0 2px 6px rgba(0,0,0,.45),0 0 0 3px rgba(59,130,246,.25)}
+
+  button{font:inherit;font-weight:600;width:100%;padding:12px 16px;margin:6px 0;border-radius:12px;border:0;cursor:pointer;color:#fff;
+    background:linear-gradient(135deg,#3B82F6 0%,#2563EB 45%,#4F46E5 100%);
+    box-shadow:0 10px 22px -10px rgba(59,130,246,.75),inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,0,0,.25);
+    transition:transform .12s ease,filter .2s ease}
+  button:hover{filter:brightness(1.08)}
+  button:active{transform:translateY(1px) scale(.99)}
+  button:disabled{opacity:.6;cursor:default}
+  button.alt{color:var(--text-2);background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.02)),var(--surface);
+    border:1px solid var(--border);border-top-color:var(--border-hi);box-shadow:0 8px 18px -12px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.06)}
+
+  .card{border-radius:18px;padding:16px;margin:12px 0;cursor:pointer;
+    background:linear-gradient(145deg,rgba(255,255,255,.09) 0%,rgba(255,255,255,.015) 45%,rgba(255,255,255,0) 100%),var(--surface-glass);
+    border:1px solid var(--border);border-top-color:var(--border-hi);
+    box-shadow:0 18px 40px -20px rgba(0,0,0,.85),inset 0 1px 0 rgba(255,255,255,.07);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+  .card.plain{cursor:default}
+  .card h2{margin:0 0 6px;font-size:1.05rem}
+  .card p{margin:4px 0;color:var(--text-2)}
+  .badge{display:inline-block;margin-left:8px;padding:3px 10px;border-radius:999px;font-size:.75rem;font-weight:600;color:var(--emerald);
+    background:rgba(16,185,129,.14);border:1px solid rgba(16,185,129,.35)}
+  .muted{color:var(--muted);font-size:.9rem}
+  .big{font-size:2.4rem;font-weight:800;text-align:center;margin:18px 0 6px}
+  .center{text-align:center}
+
+  .seg{display:flex;gap:8px}
+  .seg button{flex:1;margin:6px 0}
+
+  .pack{display:flex;justify-content:space-between;align-items:center;cursor:default}
+  .pack span{color:var(--text-2)}
+  .pack button{width:auto;flex:none;margin:0;padding:10px 16px}
+
+  video{width:100%;border-radius:14px;display:block;border:1px solid var(--border);margin-top:8px;background:#000}
+
+  .msg{min-height:1.3em;color:var(--sky);font-size:.92em;margin:8px 2px}
+  .log{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.72rem;line-height:1.5;color:#93C5FD;background:rgba(2,6,23,.75);
+    border:1px solid var(--border);border-radius:12px;padding:10px 12px;max-height:320px;overflow:auto;white-space:pre-wrap}
+  .back{width:auto;margin:0 0 10px;padding:8px 14px;font-size:.9rem}
+  #player{position:relative;margin:0 auto 12px;background:#000;border-radius:14px;overflow:hidden;
+    border:1px solid var(--border);box-shadow:0 18px 40px -18px rgba(0,0,0,.9);display:flex;flex-direction:column}
+  #player.full{height:min(70vh,600px);width:min(calc(min(70vh,600px) * 9 / 16),100%)}
+  #player.mini{position:fixed;right:12px;bottom:12px;width:150px;height:300px;margin:0;z-index:30;box-shadow:0 14px 30px -10px rgba(0,0,0,.95)}
+  #pv{flex:1 1 auto;min-height:0;width:100%;object-fit:contain;background:#000;display:block}
+  #player .plyr{flex:1 1 auto;min-height:0;height:100%;width:100%}
+  #player .plyr__video-wrapper,#player .plyr video{height:100%}
+  #player .plyr video{object-fit:contain}
+  #pX{z-index:50 !important}
+  .consent{display:flex;gap:10px;align-items:flex-start;margin:10px 4px;color:var(--text-2);font-size:.9rem;line-height:1.4}
+  .consent input{width:20px;height:20px;margin:2px 0 0;flex:0 0 20px;padding:0;box-shadow:none}
+  .legal-links{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;margin:8px 0 4px;font-size:.85rem}
+  .legal-links button{width:auto;margin:0;padding:0;background:none;box-shadow:none;color:var(--sky);font-weight:500;text-decoration:underline}
+  .doc{color:var(--text-2);line-height:1.55;font-size:.95rem}
+  .doc h3{margin:18px 0 6px;color:var(--text);font-size:1rem}
+  .doc p,.doc li{margin:6px 0}
+  .doc ul{padding-left:20px}
+  .docnav{display:flex;flex-wrap:wrap;gap:6px}
+  .docnav button{width:auto;flex:1 1 30%;margin:0;padding:8px 6px;font-size:.78rem}
+  .share-row{display:flex;flex-wrap:wrap;gap:6px}
+  .share-row button{width:auto;flex:1 1 30%;margin:0;padding:8px 6px;font-size:.8rem}
+  .linkbox{word-break:break-all;background:rgba(2,6,23,.6);border:1px solid var(--border);border-radius:10px;padding:10px;color:var(--text-2);font-size:.85rem;margin:8px 0}
+  #pbar{flex:0 0 auto;display:flex;gap:6px;padding:8px;background:rgba(15,23,42,.95)}
+  #ptitle{display:none}
+  #pX{position:absolute;top:8px;right:8px;z-index:2;width:34px;height:34px;margin:0;padding:0;border-radius:50%;
+    background:rgba(15,23,42,.8);color:#fff;font-size:20px;line-height:34px;box-shadow:none}
+  .pbtn{width:auto;flex:1 1 0;margin:0;padding:8px 6px;font-size:.8rem;border-radius:10px;white-space:nowrap}
+  #player.mini #pbar{flex-direction:row;padding:6px}
+  #player.mini #pFull,#player.mini #pMin{display:none}
+  #player:not(.mini) #pOpen{display:none}
+  #player.mini #ptitle{display:none}
+  /* ---- Africa United page ---- */
+  .afr{font-family:Georgia,"Times New Roman",serif;color:#F8F5EC}
+  .afr-hero{position:relative;overflow:hidden;border-radius:20px;padding:26px 22px;margin:12px 0;
+    background:linear-gradient(135deg,#0B1F3A 0%,#13305A 60%,#0B1F3A 100%);border:1px solid rgba(201,162,39,.4)}
+  .afr-hero::before{content:"";position:absolute;inset:0;opacity:.08;pointer-events:none;
+    background:repeating-linear-gradient(45deg,#C9A227 0 2px,transparent 2px 14px),repeating-linear-gradient(-45deg,#1F7A4D 0 2px,transparent 2px 14px)}
+  .afr-kicker{font-family:system-ui,-apple-system,sans-serif;font-size:.75rem;letter-spacing:.18em;color:#C9A227;text-transform:uppercase}
+  .afr h1{font-size:1.7rem;line-height:1.2;margin:8px 0 6px;font-weight:700}
+  .afr-tag{color:#C9A227;font-style:italic;margin:0 0 12px}
+  .afr p{line-height:1.6;color:#E6E1D3;margin:8px 0}
+  .afr h2{font-size:1.25rem;margin:0 0 8px;color:#F8F5EC}
+  .afr-section{border-top:1px solid rgba(201,162,39,.3);padding:20px 4px 4px;margin-top:18px}
+  .afr-grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media (min-width:640px){.afr-grid{grid-template-columns:1fr 1fr}}
+  .afr-card{border-radius:16px;padding:16px;background:linear-gradient(160deg,rgba(19,48,90,.9),rgba(11,31,58,.95));
+    border:1px solid rgba(201,162,39,.25);transition:transform .2s ease,border-color .2s ease}
+  .afr-card:hover{transform:translateY(-2px);border-color:rgba(201,162,39,.6)}
+  .afr-card h3{margin:0 0 6px;font-size:1.02rem;color:#C9A227}
+  .afr-card p{font-size:.92rem;margin:0}
+  .afr-cta{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+  .afr-cta button{font-family:system-ui,-apple-system,sans-serif;margin:0;background:linear-gradient(135deg,#C9A227,#A8841A);color:#0B1F3A;box-shadow:0 10px 22px -12px rgba(201,162,39,.8)}
+  .afr-cta button.alt{background:transparent;color:#F8F5EC;border:1px solid rgba(201,162,39,.5);box-shadow:none}
+  .afr-flag{font-size:1.6rem;margin-right:8px;vertical-align:middle}
+  .afr details{background:rgba(11,31,58,.6);border:1px solid rgba(201,162,39,.25);border-radius:14px;padding:12px 14px}
+  .afr summary{cursor:pointer;color:#C9A227;font-family:system-ui,-apple-system,sans-serif;font-weight:600}
+  .afr .soon{display:inline-block;font-family:system-ui,-apple-system,sans-serif;font-size:.72rem;padding:3px 9px;border-radius:999px;
+    background:rgba(31,122,77,.25);border:1px solid rgba(31,122,77,.6);color:#BFE8D2}
+  .afr .disclaimer{font-size:.8rem;color:#A9B4C6;border-top:1px solid rgba(201,162,39,.2);padding-top:12px;margin-top:20px}
+  .afr-steps{counter-reset:s;list-style:none;padding:0;margin:8px 0}
+  .afr-steps li{counter-increment:s;padding:10px 0 10px 40px;position:relative;color:#E6E1D3;border-bottom:1px dashed rgba(201,162,39,.2)}
+  .afr-steps li::before{content:counter(s);position:absolute;left:0;top:9px;width:26px;height:26px;border-radius:50%;
+    background:#1F7A4D;color:#fff;text-align:center;line-height:26px;font-family:system-ui,-apple-system,sans-serif;font-size:.85rem}
+  @media (prefers-reduced-motion: reduce){ .afr-card{transition:none} }
+  .tabs button{min-width:0;padding:10px 4px;font-size:.8rem;line-height:1.25}
+  .afr-card.clickable{cursor:pointer}
+  .afr-card .join{display:block;margin-top:6px;color:#C9A227;font-size:.85rem;font-family:system-ui,-apple-system,sans-serif}
+  .joinform label{display:block;margin:12px 0 2px;color:var(--text-2);font-size:.9rem}
+  .joinform .chk{display:flex;gap:10px;align-items:flex-start;margin:8px 0;color:var(--text-2);font-size:.9rem}
+  .joinform .chk input{width:20px;height:20px;flex:0 0 20px;margin:2px 0 0;padding:0;box-shadow:none}
+  .afr-count{display:block;margin-top:6px;color:#F8F5EC;font-family:system-ui,-apple-system,sans-serif;font-size:.85rem}
+  select.langsel{width:100%;padding:12px;margin:6px 0;border-radius:12px;color:var(--text);background:rgba(15,23,42,.7);border:1px solid rgba(71,85,105,.6);font:inherit}
+  .mg-head{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 4px}
+  .mg-head div{background:rgba(2,6,23,.45);border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+  .mg-head span{display:block;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .mg-head strong{display:block;margin-top:4px;color:var(--text);font-size:.95rem;font-family:system-ui,-apple-system,sans-serif}
+  .mg-section{margin-top:14px}
+  .mg-section h2{margin-bottom:4px}
+  .mg-section .muted{font-size:.85rem;margin:0 0 6px}
+  .mg-danger{border:1px solid rgba(239,68,68,.45)!important;background:linear-gradient(145deg,rgba(127,29,29,.25),rgba(15,23,42,.8))!important}
+  .mg-danger h2{color:#FCA5A5}
+  button.danger{background:linear-gradient(135deg,#DC2626,#991B1B)!important;box-shadow:0 10px 22px -12px rgba(220,38,38,.8)!important}
+  .status-pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.75rem;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:#A7F3D0}
+  input[type="checkbox"]{width:20px;height:20px;min-width:20px;flex:0 0 20px;padding:0;margin:2px 0 0;box-shadow:none;border-radius:5px;accent-color:#3B82F6}
+  .chk{display:flex;gap:10px;align-items:flex-start;margin:10px 2px;color:var(--text-2);font-size:.92rem;line-height:1.4}
+  .phonerow{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;align-items:stretch}
+  .phonerow select{margin:6px 0 0;min-width:0;width:100%}
+  .phonerow input{margin:0 0 6px}
+  .topav{display:flex;align-items:center;margin-right:8px}
+  .activepill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.75rem;font-weight:600;letter-spacing:.04em;
+    background:rgba(201,162,39,.15);border:1px solid rgba(201,162,39,.55);color:#F3D77A}
+  .sechead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  .savedpill{display:inline-block;padding:4px 12px;border-radius:999px;font-size:.78rem;font-weight:700;letter-spacing:.04em;
+    background:rgba(16,185,129,.2);border:1px solid rgba(16,185,129,.7);color:#A7F3D0}
+  .editpill{display:inline-block;padding:4px 12px;border-radius:999px;font-size:.78rem;font-weight:700;letter-spacing:.04em;
+    background:rgba(59,130,246,.2);border:1px solid rgba(59,130,246,.7);color:#BFDBFE}
+  .saved-card{border-color:rgba(16,185,129,.6)!important;box-shadow:0 0 0 1px rgba(16,185,129,.25),0 18px 40px -20px rgba(16,185,129,.35)!important}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .btnrow button{flex:1 1 140px;width:auto}
+  .kv{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:8px 14px;margin:10px 0;font-size:.95rem}
+  .kv dt{color:var(--muted);font-size:.82rem;letter-spacing:.03em;text-transform:uppercase;align-self:center}
+  .kv dd{margin:0;color:var(--text);font-weight:500;overflow-wrap:anywhere}
+  .kvlist{list-style:none;padding:0;margin:10px 0;color:var(--text-2)}
+  .kvlist li{padding:6px 0;border-bottom:1px dashed rgba(71,85,105,.5)}
+  @media (max-width:420px){ .kv{grid-template-columns:1fr} }
+  .tile{margin:0;padding:16px 12px;font-size:.95rem}
+  #consent{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(11,18,34,.97);border-top:1px solid var(--border-hi);
+    padding:14px 16px;color:var(--text-2);font-size:.88rem;line-height:1.45;box-shadow:0 -10px 30px -10px rgba(0,0,0,.8)}
+  #consent p{margin:0 0 10px}
+  .cbtns{display:flex;gap:8px}
+  .cbtns button{flex:1;margin:0;padding:10px}
+  .linkbtn{background:none;box-shadow:none;width:auto;margin:0;padding:0;color:var(--sky);text-decoration:underline;font-weight:500;display:inline}
+  .chatbox{max-height:380px;overflow-y:auto;background:rgba(2,6,23,.5);border:1px solid var(--border);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px}
+  .chatmsg{background:rgba(30,41,59,.8);border:1px solid var(--border);border-radius:12px;padding:8px 10px}
+  .chatmsg .who{font-size:.82rem;color:#C9A227;font-weight:700}
+  .chatmsg .when{font-size:.7rem;color:var(--muted);margin-left:6px;font-weight:400}
+  .chatmsg p{margin:4px 0 0;color:var(--text);white-space:pre-wrap;overflow-wrap:anywhere}
+  .chatmsg img{max-width:100%;border-radius:10px;margin-top:6px;display:block}
+  .chatmsg .rep{background:none;box-shadow:none;width:auto;margin:4px 0 0;padding:0;font-size:.75rem;color:var(--muted);text-decoration:underline;display:inline}
+  .chatform textarea{width:100%;min-height:72px;padding:10px;border-radius:12px;background:rgba(15,23,42,.7);color:var(--text);border:1px solid rgba(71,85,105,.6);font:inherit;margin-top:8px;resize:vertical}
+  .filebtn{display:inline-block;flex:1 1 40%;text-align:center;padding:12px 10px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text-2);cursor:pointer;font-weight:600;margin:6px 0}
+  .chatform .btnrow button{flex:1 1 40%}
+  .brow{display:flex;margin:6px 0}
+  .brow.mine{justify-content:flex-end}
+  .brow.theirs{justify-content:flex-start}
+  .bubble{max-width:78%;padding:8px 12px;border-radius:16px;background:rgba(30,41,59,.92);border:1px solid var(--border);color:var(--text);cursor:pointer}
+  .brow.theirs .bubble{border-bottom-left-radius:4px}
+  .brow.mine .bubble{background:linear-gradient(135deg,#2563EB,#4F46E5);border-color:transparent;color:#fff;border-bottom-right-radius:4px;cursor:default}
+  .bwho{font-size:.78rem;font-weight:700;color:#C9A227;margin-bottom:2px}
+  .bubble p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;color:inherit}
+  .bubble img{display:block;max-width:200px;max-height:260px;width:auto;height:auto;border-radius:12px;margin-top:6px}
+  .btime{font-size:.68rem;opacity:.7;margin-top:4px;text-align:right}
+  .bactions{margin-top:8px;border-top:1px solid var(--border);padding-top:8px}
+  .bactions button{width:auto;margin:0;padding:6px 10px;font-size:.78rem;background:none;box-shadow:none;color:#FCA5A5;text-decoration:underline;font-weight:600}
+  .bact{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;margin-top:6px;border-top:1px solid rgba(71,85,105,.5);padding-top:6px}
+  .bact button{width:100%;margin:0;padding:6px 2px;font-size:.7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:none;box-shadow:none;color:var(--text-2);font-weight:600;text-align:center}
+  .bact button.on{color:#93C5FD}
+  .bact button.sv.on{color:#F3D77A}
+  .brow.mine .bact{border-top-color:rgba(255,255,255,.25)}
+  .brow.mine .bact button{color:rgba(255,255,255,.9)}
+  .brow.mine .bact button.on{color:#FDE68A}
+  .cpanel{margin-top:8px;border-top:1px solid rgba(71,85,105,.5);padding-top:8px}
+  .clist{display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;margin-bottom:6px}
+  .cit{background:rgba(2,6,23,.45);border-radius:10px;padding:6px 8px;font-size:.88rem;color:var(--text);overflow-wrap:anywhere}
+  .cwho{font-weight:700;color:#C9A227;font-size:.82rem}
+  .cmeta{font-size:.7rem;color:var(--muted);margin-top:2px}
+  .cbtn{background:none;box-shadow:none;width:auto;margin:0;padding:0;font-size:.7rem;color:var(--muted);text-decoration:underline;display:inline}
+  .cform{display:flex;gap:6px;margin-top:6px}
+  .cform input{flex:1;margin:0;padding:8px 10px;border-radius:10px}
+  .cform button{width:auto;margin:0;padding:8px 12px}
+  .brow.mine .cit{background:rgba(15,23,42,.35)}
+  .brow.mine .cbtn{color:rgba(255,255,255,.85)}
+  #scr-chat{position:fixed;inset:0;z-index:45;display:flex;flex-direction:column;background:var(--sunray);background-attachment:fixed;padding:0;max-width:none;margin:0}
+  .chathead{display:flex;align-items:center;gap:12px;padding:12px 14px;background:linear-gradient(180deg,rgba(30,41,59,.95),rgba(15,23,42,.9));border-bottom:1px solid var(--border)}
+  .chathead button{width:auto;margin:0;padding:8px 12px}
+  .chathead strong{display:block;font-size:1.05rem}
+  .chatpage{flex:1 1 auto;min-height:0;max-height:none;border-radius:0;border-left:0;border-right:0;margin:0;padding:12px}
+  .chatcomposer{padding:10px 12px 14px;border-top:1px solid var(--border);background:rgba(15,23,42,.96)}
+  .chatcomposer textarea{margin-top:0}
+  .chatcomposer .btnrow{margin-top:6px}
+  .bubble{max-width:86%}
+  .bact button{font-size:.66rem;white-space:normal;line-height:1.2;overflow:visible;text-overflow:clip}
+  .av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#3B82F6,#4F46E5);color:#fff;font-weight:700;font-size:.8rem;display:inline-flex;align-items:center;justify-content:center;flex:0 0 34px;letter-spacing:.02em}
+  .brow.theirs{align-items:flex-end;gap:8px}
+  .brow .av{margin-bottom:2px}
+  .cmp-compact{display:flex;align-items:center;gap:10px}
+  .cmp-open{flex:1;text-align:left;margin:0;background:rgba(30,41,59,.85);border:1px solid var(--border);border-radius:24px;padding:13px 18px;color:var(--muted);font-weight:500;box-shadow:none}
+  .cmp-full textarea{border-radius:20px;min-height:58px;margin-top:0;padding:12px 16px}
+  .cmp-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+  .cmp-row .cmp-attach{flex:1;text-align:center;margin:0;padding:10px;border-radius:22px;background:var(--surface);border:1px solid var(--border);color:var(--text-2);font-size:.9rem;font-weight:600;cursor:pointer}
+  .send-round{width:46px;height:46px;border-radius:50%;margin:0;padding:0;flex:0 0 46px;display:inline-flex;align-items:center;justify-content:center}
+  .send-round svg{width:20px;height:20px;fill:#fff}
+  .sheet{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center}
+  .sheet.hidden{display:none!important}
+  .sheet-back{position:absolute;inset:0;background:rgba(2,6,23,.6)}
+  .sheet-body{position:relative;width:100%;max-width:560px;height:80vh;background:linear-gradient(180deg,#152238,#0B1222);border-radius:24px 24px 0 0;display:flex;flex-direction:column;border-top:1px solid var(--border-hi);box-shadow:0 -20px 50px -20px rgba(0,0,0,.9)}
+  .sheet-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border)}
+  .sheet-head strong{font-size:1.05rem}
+  .sheet-x{width:auto;margin:0;padding:4px 10px;background:none;box-shadow:none;color:var(--text-2);font-size:1.2rem}
+  .sheet-list{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:14px}
+  .sheet-form{display:flex;gap:10px;align-items:center;padding:10px 14px 18px;border-top:1px solid var(--border);background:rgba(15,23,42,.92)}
+  .sheet-form input{flex:1;margin:0;border-radius:24px;padding:12px 16px}
+  .cmt{display:flex;gap:10px;align-items:flex-start}
+  .cmt .cbody{flex:1;min-width:0}
+  .cmt .cwho{font-weight:700;color:#C9A227;font-size:.86rem}
+  .cmt .ctext{color:var(--text);margin-top:2px;overflow-wrap:anywhere;line-height:1.45}
+  .cmt .cmeta{font-size:.72rem;color:var(--muted);margin-top:4px;display:flex;gap:12px;align-items:center}
+  .cmt .cbtn{background:none;box-shadow:none;width:auto;margin:0;padding:0;font-size:.72rem;color:var(--muted);text-decoration:underline}
+  .plus{width:46px;height:46px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:1.7rem;font-weight:300;color:var(--text);cursor:pointer;flex:0 0 46px;line-height:1;margin:0}
+  .brow.theirs{align-items:flex-start}
+  .brow .av{margin-top:2px}
+  .bact button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;margin:0;padding:6px 2px;font-size:.68rem;line-height:1.15;white-space:normal;background:none;box-shadow:none;color:var(--text-2);font-weight:600;text-align:center}
+  .bact svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .bact button.on svg{fill:currentColor}
+  .bact button.on{color:#93C5FD}
+  .bact button.sv.on{color:#F3D77A}
+  .bact b{font-weight:700}
+  .brow.mine .bact button.on{color:#FDE68A}
+  img.av{object-fit:cover;background:#1E293B}
+  .avw{position:relative;width:34px;height:34px;flex:0 0 34px;display:inline-block;margin-top:2px}
+  .avw .av{margin:0}
+  .avw .dot{display:none;position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border-radius:50%;background:#22C55E;border:2px solid #0B1222}
+  .avw.on .dot{display:block}
+</style>
+</head>
+<body>
+<div id="boot" style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0B1222;color:#E5E7EB;font-family:system-ui,-apple-system,sans-serif;z-index:100;text-align:center;padding:20px">
+  <strong style="font-size:1.1rem">Loading Bash Clips TV…</strong>
+  <span style="font-size:.9rem;opacity:.8">This can take a moment on a slow connection.</span>
+  <span style="font-size:.85rem;opacity:.7">Chargement de Bash Clips TV… Cela peut prendre un moment sur une connexion lente.</span>
+</div>
+<div id="splash"><img src="logo.webp" alt="Bash Clips TV"></div>
+
+<!-- Sign-in screen -->
+<main class="wrap hidden" id="scr-auth">
+  <img src="logo.webp" alt="Bash Clips TV" style="width:160px;display:block;margin:24px auto 8px">
+  <div class="seg">
+    <button type="button" id="tabIn">Sign in</button>
+    <button type="button" id="tabUp" class="alt">Sign up (+50 coins)</button>
+  </div>
+  <button type="button" id="google" class="alt">Continue with Google</button>
+  <input id="email" type="email" placeholder="Email" autocomplete="username">
+  <input id="pass" type="password" placeholder="Password" autocomplete="current-password">
+  <div id="signupConsent" class="hidden">
+    <label class="consent"><input type="checkbox" id="chk18"> I confirm I am 18 years or older.</label>
+    <label class="consent"><input type="checkbox" id="chkTerms"> I have read and agree to the Terms &amp; Conditions, Privacy Policy and Refund Policy.</label>
+  </div>
+  <button type="button" id="authGo">Sign in</button>
+  <button type="button" id="guest" class="alt">Browse as guest</button>
+  <div class="msg" id="authMsg"></div>
+  <div class="legal-links">
+    <button type="button" data-doc="terms" class="legalOpen">Terms</button>
+    <button type="button" data-doc="privacy" class="legalOpen">Privacy</button>
+    <button type="button" data-doc="refund" class="legalOpen">Refunds</button>
+    <button type="button" data-doc="parental" class="legalOpen">Parental guide</button>
+    <button type="button" id="afrOpenAuth">🌍 Africa United</button>
+  </div>
+  <div class="consent" style="justify-content:center;margin-top:8px">
+    <label>Language <select id="langSelAuth" class="langsel"></select></label>
+  </div>
+</main>
+
+<!-- Comments panel -->
+<div id="cmtSheet" class="sheet hidden">
+  <div class="sheet-back" onclick="closeComments()"></div>
+  <div class="sheet-body">
+    <div class="sheet-head"><strong>Comments</strong><button type="button" class="sheet-x" onclick="closeComments()" aria-label="Close">✕</button></div>
+    <div class="sheet-list" id="cmtList"></div>
+    <div class="sheet-form">
+      <label class="plus" for="cmtFile" title="Add photo">+</label>
+      <input type="file" id="cmtFile" accept="image/jpeg,image/png,image/webp" style="display:none">
+      <input id="cmtText" type="text" maxlength="500" placeholder="Write a comment">
+      <button type="button" class="send-round" id="cmtSend" aria-label="Send comment"><svg viewBox="0 0 24 24"><path d="M3 11.5 21 3l-8.5 18-2.2-7.3z"/></svg></button>
+    </div>
+    <div class="msg" id="cmtMsg" style="padding:0 16px 8px"></div>
+  </div>
+</div>
+
+<!-- Full-screen member chat -->
+<section id="scr-chat" class="hidden">
+  <div class="chathead">
+    <button type="button" class="alt" id="chatBack">← Back</button>
+    <div><strong>Member chat</strong><span class="muted" id="chatSub">All Africa United members</span></div>
+  </div>
+  <div class="chatbox chatpage" id="chatList"></div>
+  <div class="chatcomposer">
+    <input type="file" id="chatFile" accept="image/jpeg,image/png,image/webp" style="display:none">
+    <div class="cmp-compact" id="cmpCompact">
+      <label class="plus" for="chatFile" title="Add photo">+</label>
+      <button type="button" class="cmp-open" id="cmpOpen">Write a message</button>
+    </div>
+    <div class="cmp-full" id="cmpFull" hidden>
+      <textarea id="chatText" maxlength="1000" placeholder="Write a message"></textarea>
+      <div class="cmp-row">
+        <label class="plus" for="chatFile" title="Add photo">+</label>
+        <span class="muted" id="chatFileName" style="flex:1;font-size:.85rem"></span>
+        <button type="button" class="send-round" id="chatSend" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M3 11.5 21 3l-8.5 18-2.2-7.3z"/></svg></button>
+      </div>
+      <div class="msg" id="chatMsg"></div>
+    </div>
+  </div>
+</section>
+
+<!-- Signed-in shell -->
+<div class="wrap hidden" id="shell">
+  <div class="topbar">
+    <strong class="brand-title">Bash Clips TV</strong>
+    <div class="topav" id="topAvatar"></div>
+    <button type="button" class="balchip" id="balChip" title="Buy coins">— coins</button>
+  </div>
+  <nav class="tabs">
+    <button type="button" id="tWatch">Watch</button>
+    <button type="button" id="tCoins" class="alt">Coins</button>
+    <button type="button" id="tMember" class="alt" title="My membership" aria-label="My membership">★</button>
+    <button type="button" id="tAccount" class="alt">Account</button>
+    <button type="button" id="tAfrica" class="alt">🌍 Africa United</button>
+  </nav>
+
+  <!-- Shared video player: full size on the episode screen, small box when minimized -->
+  <div id="player" class="hidden">
+    <button type="button" id="pX" aria-label="Close player">×</button>
+    <video id="pv" controls playsinline></video>
+    <div id="ptitle" class="hidden"></div>
+    <div id="pbar">
+      <button type="button" class="pbtn" id="pFull">Full screen</button>
+      <button type="button" class="pbtn alt" id="pMin">Minimize</button>
+      <button type="button" class="pbtn alt" id="pOpen">Open</button>
+      <button type="button" class="pbtn alt" id="pClose">Close</button>
+    </div>
+  </div>
+
+  <!-- Watch: episode list -->
+  <section id="scr-watch">
+    <div id="list"></div>
+    <div class="msg" id="listMsg"></div>
+  </section>
+
+  <!-- Episode: player or unlock -->
+  <section id="scr-episode" class="hidden">
+    <button type="button" class="alt back" id="epBack">← Back to episodes</button>
+    <div class="card plain" id="epCard"></div>
+    <div class="msg" id="epMsg"></div>
+  </section>
+
+  <!-- Coins: balance only -->
+  <section id="scr-coins" class="hidden">
+    <div class="card plain center">
+      <p class="muted">Your balance</p>
+      <div class="big" id="coinsBig">0</div>
+      <p class="muted">coins</p>
+    </div>
+    <button type="button" id="goBuy">Buy coins</button>
+  </section>
+
+  <!-- Buy: Flutterwave packs -->
+  <section id="scr-buy" class="hidden">
+    <button type="button" class="alt back" id="buyBack">← Back to coins</button>
+    <div class="card plain">
+      <h2>Buy coins</h2>
+      <div class="seg">
+        <button type="button" id="curNGN">Naira (₦)</button>
+        <button type="button" id="curUSD" class="alt">USD ($)</button>
+      </div>
+      <div id="packs"></div>
+      <div class="msg" id="payMsg"></div>
+    </div>
+  </section>
+
+  <!-- Account: details, sign out, activity log -->
+  <!-- Legal and guides -->
+  <section id="scr-legal" class="hidden">
+    <button type="button" class="alt back" id="legalBack">← Back</button>
+    <div class="card plain">
+      <div class="docnav">
+        <button type="button" class="legalOpen" data-doc="terms">Terms</button>
+        <button type="button" class="legalOpen" data-doc="privacy">Privacy</button>
+        <button type="button" class="legalOpen" data-doc="refund">Refunds</button>
+        <button type="button" class="legalOpen" data-doc="guide">User guide</button>
+        <button type="button" class="legalOpen" data-doc="parental">Parental guide</button>
+      </div>
+    </div>
+    <div class="card plain doc" id="docBody"></div>
+  </section>
+
+  <!-- Africa United – Beyond Borders -->
+  <section id="scr-africa" class="hidden afr">
+    <div class="afr-hero">
+      <div class="afr-kicker">Independent initiative</div>
+      <h1 id="afrH1">AFRICA UNITED – BEYOND BORDERS</h1>
+      <p class="afr-tag" id="afrTag">One People. Many Cultures. One Future.</p>
+      <p id="afrIntro">Africa United – Beyond Borders is an independent initiative connecting young Africans through cultural exchange, creative expression, digital storytelling, youth development and international collaboration.</p>
+      <p>Our goal is to build bridges across African countries, celebrate our diversity and create opportunities for young people to work together.</p>
+      <div class="afr-cta">
+        <button type="button" id="afrCtaAbout" data-scroll="afr-about">Discover Africa United</button>
+        <button type="button" class="alt" id="afrCtaProg" data-scroll="afr-programmes">Explore Our Programmes</button>
+        <button type="button" class="alt" id="afrCtaStories" data-tab="tWatch">Watch Our Stories</button>
+      </div>
+    </div>
+
+    <div class="afr-section" id="afr-about">
+      <h2>About</h2>
+      <p><strong>Vision.</strong> A connected Africa where young people move freely in ideas, culture and opportunity.</p>
+      <p><strong>Mission.</strong> To create cross-border platforms for youth creativity, cultural exchange and digital storytelling.</p>
+      <p><strong>Values.</strong> Unity, respect for diversity, creativity, integrity and shared responsibility.</p>
+      <p><strong>Our content.</strong> Through Bash Clips TV, we share short-form drama and entertainment that tell African stories.</p>
+      <p class="muted" style="color:#C9A227">Founder &amp; Executive Director</p>
+    </div>
+
+    <div class="afr-section" id="afr-programmes">
+      <h2>Featured programmes</h2>
+      <div class="afr-grid">
+        <div class="afr-card"><h3>A. Cross-Border Youth Showcase</h3><p>A platform for young people to showcase their talents, cultures, creativity and achievements across African borders.</p></div>
+        <div class="afr-card"><h3>B. Our Culture, Our Story</h3><p>Celebrating African traditions, languages, music, fashion, arts, heritage and cultural identity.</p></div>
+        <div class="afr-card"><h3>C. African Digital Cinema</h3><p>Using film, animation, digital storytelling and creative media to share African stories with wider audiences.</p></div>
+        <div class="afr-card"><h3>D. Beyond Borders Youth Exchange</h3><p>Encouraging collaboration, friendship, cultural understanding and learning between young people from different African countries.</p></div>
+      </div>
+    </div>
+
+    <div class="afr-section" id="afr-countries">
+      <h2>Participating countries</h2>
+      <details open>
+        <summary>Countries (<span id="afrCount">3</span>)</summary>
+        <div id="afrCountries" style="margin-top:10px"></div>
+        <p class="muted" style="color:#A9B4C6;font-size:.85rem">More countries will be listed here as they join.</p>
+      </details>
+    </div>
+
+    <div class="afr-section" id="afr-festival">
+      <h2>THE AFRICA UNITED INTERNATIONAL FESTIVAL</h2>
+      <p>A celebration of African unity, creativity, culture and youth collaboration, bringing people together beyond national borders.</p>
+      <ol class="afr-steps">
+        <li>Digital launch.</li>
+        <li>Online cultural and creative showcases.</li>
+        <li>Physical international festival.</li>
+      </ol>
+      <p><span class="soon">Announcements coming soon</span></p>
+    </div>
+
+    <div class="afr-section" id="afr-bct">
+      <h2>Powered by Creativity. Connected Through Stories.</h2>
+      <p>Bash Clips TV is the official media and production partner of Africa United – Beyond Borders.</p>
+      <div class="afr-cta">
+        <button type="button" data-tab="tWatch">Go to Bash Clips TV</button>
+      </div>
+    </div>
+
+    <p class="disclaimer">Africa United – Beyond Borders is an independent initiative. Bash Clips TV is its media and production partner. No government or institution has endorsed this initiative. No event dates, venues or guests are confirmed yet.</p>
+  </section>
+
+  <!-- Africa United membership form -->
+  <section id="scr-join" class="hidden afr">
+    <button type="button" class="alt back" id="joinBack">← Back to Africa United</button>
+    <div class="afr-hero">
+      <div class="afr-kicker">Membership</div>
+      <h1 id="joinTitle"></h1>
+      <p id="joinIntro"></p>
+    </div>
+    <div class="card plain joinform" id="joinBody"></div>
+  </section>
+
+  <!-- Member hub (after registration) -->
+  <section id="scr-hub" class="hidden afr">
+    <button type="button" class="alt back" id="hubBack">← Back to Africa United</button>
+    <div class="afr-hero">
+      <div class="afr-kicker">Member hub</div>
+      <h1 id="hubTitle"></h1>
+      <p id="hubIntro"></p>
+      <p class="afr-count" id="hubNo"></p>
+      <div id="hubAvatar" style="margin-top:12px"></div>
+      <div class="afr-cta"><button type="button" class="alt" id="hubManage">Manage my membership</button></div>
+    </div>
+    <div class="afr-section" id="hubChat">
+      <h2>Member chat</h2>
+      <p class="muted">A general chat for all Africa United members, across all countries. Share, comment and appreciate each other's work.</p>
+      <div class="afr-cta"><button type="button" id="openChatBtn">Open member chat</button></div>
+    </div>
+
+    <div class="afr-section">
+      <h2>Explore</h2>
+      <div class="afr-grid" id="hubTopics"></div>
+    </div>
+    <div class="afr-section">
+      <h2>Movement updates</h2>
+      <p><span class="soon">Announcements coming soon</span></p>
+    </div>
+  </section>
+
+  <!-- Membership management -->
+  <section id="scr-manage" class="hidden afr">
+    <button type="button" class="alt back" id="manageBack">← Back to Africa United</button>
+    <div class="afr-hero">
+      <div class="afr-kicker">Membership</div>
+      <h1>Manage my membership</h1>
+      <p>Update your basic details, or remove your membership. Your membership number is permanent.</p>
+    </div>
+    <div id="manageBody"></div>
+  </section>
+
+  <section id="scr-account" class="hidden">
+    <button type="button" class="alt back" id="acctBack">← Back to Watch</button>
+    <div class="card plain">
+      <p class="muted">Signed in as</p>
+      <h2 id="acctEmail"></h2>
+      <button type="button" class="alt" id="signOut">Sign out</button>
+    </div>
+    <div class="card plain">
+      <h2>Profile photo</h2>
+      <div id="acctAvatar" style="display:flex;justify-content:center;margin:10px 0"></div>
+      <div id="avUploadBox">
+        <label for="avFile">Change photo</label>
+        <input type="file" id="avFile" accept="image/jpeg,image/png,image/webp">
+        <p class="muted">JPG, PNG or WebP, under 2 MB.</p>
+      </div>
+      <p class="muted" id="avGoogleNote" hidden>Your photo comes from your Google account. To change it, update your profile picture in Google.</p>
+      <div class="msg" id="avMsg"></div>
+    </div>
+    <div class="card plain">
+      <h2>Membership</h2>
+      <p class="muted">View and update your Africa United membership details.</p>
+      <button type="button" class="alt" id="acctManage">Manage membership</button>
+    </div>
+    <div class="card plain">
+      <h2>Language</h2>
+      <p class="muted">Choose the language for the app.</p>
+      <select id="langSel" class="langsel"></select>
+      <p class="muted" id="langNote"></p>
+    </div>
+    <div class="card plain">
+      <h2>Invite friends</h2>
+      <p class="muted">Share your personal link. Friends who sign up with it are linked to your account.</p>
+      <div class="linkbox" id="refLink">Loading your link...</div>
+      <button type="button" id="shareBtn">Share my link</button>
+      <div class="share-row" id="shareRow" style="margin-top:8px"></div>
+      <div class="msg" id="shareMsg"></div>
+    </div>
+    <div class="card plain">
+      <h2>Help and rules</h2>
+      <div class="docnav">
+        <button type="button" class="legalOpen" data-doc="guide">User guide</button>
+        <button type="button" class="legalOpen" data-doc="terms">Terms</button>
+        <button type="button" class="legalOpen" data-doc="privacy">Privacy</button>
+        <button type="button" class="legalOpen" data-doc="refund">Refunds</button>
+        <button type="button" class="legalOpen" data-doc="parental">Parental guide</button>
+      </div>
+    </div>
+    <div class="card plain">
+      <h2>Need help?</h2>
+      <p>If a payment or sign-in does not work, close the app, reopen it, and try again. If it still fails, contact support and include the time you tried.</p>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SB_URL = 'https://wmoquxhnaoxeukoxfjod.supabase.co';
+const SB_KEY = 'sb_publishable_OO9rGuagJDlgwynMUKrNmw_dOXok8Rz';
+const FLW_PUBLIC = 'FLWPUBK-52f32e15b02edeba097cfad41e73a8f3-X';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+const libLoads = {};
+function loadScript(src) {
+  if (!libLoads[src]) {
+    libLoads[src] = new Promise((resolve, reject) => {
+      const el = document.createElement('script');
+      el.src = src;
+      el.onload = resolve;
+      el.onerror = () => { delete libLoads[src]; reject(new Error('load failed: ' + src)); };
+      document.body.appendChild(el);
+    });
+  }
+  return libLoads[src];
+}
+const PLYR_SRC = 'https://cdn.jsdelivr.net/npm/plyr@3.7.8/dist/plyr.polyfilled.js';
+const FLW_SRC = 'https://checkout.flutterwave.com/v3.js';
+async function ensureFlutterwave() {
+  if (typeof FlutterwaveCheckout === 'function') return true;
+  try { await loadScript(FLW_SRC); } catch (err) { step(err.message); }
+  return typeof FlutterwaveCheckout === 'function';
+}
+
+// Display only. The server holds the real prices and coin amounts.
+const PACKS = [
+  { id: 'p100',  label: '100 coins',         ngn: 1500,  usd: 1.15  },
+  { id: 'p300',  label: '300 + 20 bonus',    ngn: 4000,  usd: 3.00  },
+  { id: 'p700',  label: '700 + 100 bonus',   ngn: 8500,  usd: 6.50  },
+  { id: 'p1500', label: '1,500 + 350 bonus', ngn: 17000, usd: 12.75 },
+];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const say = (id, t) => { $(id).textContent = t; };
+
+let mode = 'in', cur = 'NGN', user = null, token = null, shownFor = null;
+
+/* ---------- Language ---------- */
+// "ready" languages have full text. Others show English until a fluent reviewer approves the wording.
+const LANGS = [
+  { code: 'en', label: 'English', ready: true },
+  { code: 'fr', label: 'Français', ready: true },
+  { code: 'ha', label: 'Hausa (translation in review)', ready: false },
+  { code: 'yo', label: 'Yorùbá (translation in review)', ready: false },
+  { code: 'zu', label: 'isiZulu (translation in review)', ready: false },
+];
+const STRINGS = {
+  en: {
+    tabWatch: 'Watch', tabCoins: 'Coins', tabAccount: 'Account', tabAfrica: '🌍 Africa United',
+    signIn: 'Sign in', signUp: 'Sign up (+50 coins)', google: 'Continue with Google', guest: 'Browse as guest',
+    heroTitle: 'AFRICA UNITED – BEYOND BORDERS', heroTag: 'One People. Many Cultures. One Future.',
+    heroIntro: 'Africa United – Beyond Borders is an independent initiative connecting young Africans through cultural exchange, creative expression, digital storytelling, youth development and international collaboration.',
+    ctaAbout: 'Discover Africa United', ctaProg: 'Explore Our Programmes', ctaStories: 'Watch Our Stories',
+  },
+  fr: {
+    tabWatch: 'Regarder', tabCoins: 'Pièces', tabAccount: 'Compte', tabAfrica: '🌍 Africa United',
+    signIn: 'Se connecter', signUp: "S'inscrire (+50 pièces)", google: 'Continuer avec Google', guest: 'Parcourir en invité',
+    heroTitle: 'AFRIQUE UNIE – AU-DELÀ DES FRONTIÈRES', heroTag: 'Un seul peuple. Plusieurs cultures. Un seul avenir.',
+    heroIntro: "Africa United – Au-delà des frontières est une initiative indépendante qui relie les jeunes Africains à travers l'échange culturel, l'expression créative, la narration numérique, le développement de la jeunesse et la collaboration internationale.",
+    ctaAbout: 'Découvrir Africa United', ctaProg: 'Explorer nos programmes', ctaStories: 'Regarder nos histoires',
+  },
+};
+const LANG_MAP = {
+  tWatch: 'tabWatch', tCoins: 'tabCoins', tAccount: 'tabAccount', tAfrica: 'tabAfrica',
+  tabIn: 'signIn', tabUp: 'signUp', google: 'google', guest: 'guest',
+  afrH1: 'heroTitle', afrTag: 'heroTag', afrIntro: 'heroIntro',
+  afrCtaAbout: 'ctaAbout', afrCtaProg: 'ctaProg', afrCtaStories: 'ctaStories',
+};
+let lang = localStorage.getItem('bct_lang') || 'en';
+function tr(key) {
+  const l = LANGS.find(x => x.code === lang);
+  if (l && l.ready && STRINGS[lang] && STRINGS[lang][key]) return STRINGS[lang][key];
+  return STRINGS.en[key];
+}
+let observerStarted = false;
+const APPLIED = new WeakMap();   // text node -> last value written by the translator
+const ORIG = new WeakMap();      // text node -> original (English) value
+const ATTR_APPLIED = new WeakMap();
+const ATTR_ORIG = new WeakMap();
+const FR_DICT = {
+ "Our content.":"Notre contenu.","Through Bash Clips TV, we share short-form drama and entertainment that tell African stories.":"Avec Bash Clips TV, nous partageons des séries courtes et du divertissement qui racontent les histoires africaines.","Display name":"Nom d'affichage","Display name (shown to other members in the chat)":"Nom d'affichage (affiché aux autres membres dans le chat)",
+ "Watch":"Regarder","Coins":"Pièces","Africa United":"Africa United","My membership":"Mon adhésion","Watch": "Regarder", "Coins": "Pièces", "Account": "Compte", "Sign in": "Se connecter", "Sign up (+50 coins)": "S'inscrire (+50 pièces)", "Continue with Google": "Continuer avec Google", "Browse as guest": "Parcourir en invité", "Email": "E-mail", "Password": "Mot de passe", "Create account (+50 coins)": "Créer un compte (+50 pièces)", "Language": "Langue", "Sign up gives you 50 coins.": "L'inscription vous offre 50 pièces.", "Terms": "Conditions", "Privacy": "Confidentialité", "Refunds": "Remboursements", "Parental guide": "Guide parental", "← Back to episodes": "← Retour aux épisodes", "← Back to coins": "← Retour aux pièces", "← Back to Watch": "← Retour à Regarder", "← Back to Africa United": "← Retour à Africa United", "← Back": "← Retour", "Back to Africa United": "Retour à Africa United", "Tap to watch": "Appuyer pour regarder", "Tap to unlock": "Appuyer pour débloquer", "Free": "Gratuit", "Locked": "Verrouillé", "Your balance": "Votre solde", "coins": "pièces", "Buy coins": "Acheter des pièces", "Coin wallet": "Portefeuille de pièces", "Signed in as": "Connecté en tant que", "Sign out": "Se déconnecter", "Profile photo": "Photo de profil", "Change photo": "Changer la photo", "JPG, PNG or WebP, under 2 MB. Accounts that sign in with Google use their Google photo.": "JPG, PNG ou WebP, moins de 2 Mo. Les comptes connectés avec Google utilisent leur photo Google.", "Membership": "Adhésion", "View and update your Africa United membership details.": "Consultez et mettez à jour les détails de votre adhésion Africa United.", "Manage membership": "Gérer l'adhésion", "Choose the language for the app.": "Choisissez la langue de l'application.", "Invite friends": "Inviter des amis", "Share my link": "Partager mon lien", "Help and rules": "Aide et règles", "User guide": "Guide d'utilisation", "Need help?": "Besoin d'aide ?", "If a payment or sign-in does not work, close the app, reopen it, and try again. If it still fails, contact support and include the time you tried.": "Si un paiement ou une connexion ne fonctionne pas, fermez l'application, rouvrez-la et réessayez. Si le problème persiste, contactez le support en indiquant l'heure de votre essai.", "Independent initiative": "Initiative indépendante", "AFRICA UNITED – BEYOND BORDERS": "AFRIQUE UNIE – AU-DELÀ DES FRONTIÈRES", "One People. Many Cultures. One Future.": "Un seul peuple. Plusieurs cultures. Un seul avenir.", "Africa United – Beyond Borders is an independent initiative connecting young Africans through cultural exchange, creative expression, digital storytelling, youth development and international collaboration.": "Africa United – Au-delà des frontières est une initiative indépendante qui relie les jeunes Africains à travers l'échange culturel, l'expression créative, la narration numérique, le développement de la jeunesse et la collaboration internationale.", "Our goal is to build bridges across African countries, celebrate our diversity and create opportunities for young people to work together.": "Notre objectif est de bâtir des ponts entre les pays africains, de célébrer notre diversité et de créer des opportunités pour que les jeunes travaillent ensemble.", "Discover Africa United": "Découvrir Africa United", "Explore Our Programmes": "Explorer nos programmes", "Watch Our Stories": "Regarder nos histoires", "About": "À propos", "Vision.": "Vision.", "Mission.": "Mission.", "Values.": "Valeurs.", "A connected Africa where young people move freely in ideas, culture and opportunity.": "Une Afrique connectée, où les jeunes circulent librement dans les idées, la culture et les opportunités.", "To create cross-border platforms for youth creativity, cultural exchange and digital storytelling.": "Créer des plateformes transfrontalières pour la créativité des jeunes, l'échange culturel et la narration numérique.", "Unity, respect for diversity, creativity, integrity and shared responsibility.": "Unité, respect de la diversité, créativité, intégrité et responsabilité partagée.", "Founder & Executive Director": "Fondateur et Directeur exécutif", "Featured programmes": "Programmes phares", "A. Cross-Border Youth Showcase": "A. Vitrine transfrontalière de la jeunesse", "A platform for young people to showcase their talents, cultures, creativity and achievements across African borders.": "Une plateforme permettant aux jeunes de présenter leurs talents, leurs cultures, leur créativité et leurs réalisations au-delà des frontières africaines.", "B. Our Culture, Our Story": "B. Notre culture, notre histoire", "Celebrating African traditions, languages, music, fashion, arts, heritage and cultural identity.": "Célébrer les traditions, langues, musiques, mode, arts, patrimoine et identité culturelle africains.", "C. African Digital Cinema": "C. Cinéma numérique africain", "Using film, animation, digital storytelling and creative media to share African stories with wider audiences.": "Utiliser le cinéma, l'animation, la narration numérique et les médias créatifs pour partager les histoires africaines avec un public plus large.", "D. Beyond Borders Youth Exchange": "D. Échange de jeunes au-delà des frontières", "Encouraging collaboration, friendship, cultural understanding and learning between young people from different African countries.": "Encourager la collaboration, l'amitié, la compréhension culturelle et l'apprentissage entre jeunes de différents pays africains.", "Participating countries": "Pays participants", "Countries (": "Pays (", "More countries will be listed here as they join.": "D'autres pays seront ajoutés ici au fur et à mesure de leur adhésion.", "Register or explore →": "S'inscrire ou explorer →", "Be the first to join": "Soyez le premier à rejoindre", "Loading members...": "Chargement des membres...", "THE AFRICA UNITED INTERNATIONAL FESTIVAL": "FESTIVAL INTERNATIONAL AFRICA UNITED", "A celebration of African unity, creativity, culture and youth collaboration, bringing people together beyond national borders.": "Une célébration de l'unité africaine, de la créativité, de la culture et de la collaboration des jeunes, qui rassemble les peuples au-delà des frontières nationales.", "Digital launch.": "Lancement numérique.", "Online cultural and creative showcases.": "Vitrines culturelles et créatives en ligne.", "Physical international festival.": "Festival international en présentiel.", "Announcements coming soon": "Annonces à venir bientôt", "Powered by Creativity. Connected Through Stories.": "Porté par la créativité. Connecté par les histoires.", "Bash Clips TV is the official media and production partner of Africa United – Beyond Borders.": "Bash Clips TV est le partenaire officiel en médias et production d'Africa United – Au-delà des frontières.", "Go to Bash Clips TV": "Aller sur Bash Clips TV", "Africa United – Beyond Borders is an independent initiative. Bash Clips TV is its media and production partner. No government or institution has endorsed this initiative. No event dates, venues or guests are confirmed yet.": "Africa United – Au-delà des frontières est une initiative indépendante. Bash Clips TV en est le partenaire médias et production. Aucun gouvernement ni aucune institution n'a approuvé cette initiative. Aucune date d'événement, lieu ou invité n'est encore confirmé.", "Sign in to register": "Se connecter pour s'inscrire", "Please sign in to register. Your membership request is linked to your account.": "Connectez-vous pour vous inscrire. Votre demande d'adhésion est liée à votre compte.", "Full name": "Nom complet", "Country": "Pays", "City or state": "Ville ou région", "Phone number (required, used to confirm your membership)": "Numéro de téléphone (obligatoire, utilisé pour confirmer votre adhésion)", "Areas you are interested in (optional)": "Domaines qui vous intéressent (facultatif)", "Send me updates about Africa United.": "M'envoyer des mises à jour sur Africa United.", "I confirm I am 18 years or older.": "Je confirme avoir 18 ans ou plus.", "I agree to the Terms & Conditions and Privacy Policy.": "J'accepte les Conditions générales et la Politique de confidentialité.", "Register as a member": "S'inscrire comme membre", "Cross-Border Youth Showcase": "Vitrine transfrontalière de la jeunesse", "Our Culture, Our Story": "Notre culture, notre histoire", "African Digital Cinema": "Cinéma numérique africain", "Beyond Borders Youth Exchange": "Échange de jeunes au-delà des frontières", "Explore": "Explorer", "Member hub": "Espace membre", "Languages": "Langues", "Music": "Musique", "Fashion": "Mode", "Arts and crafts": "Arts et artisanat", "Heritage and traditions": "Patrimoine et traditions", "Stories from members": "Témoignages de membres", "Coming soon": "Bientôt disponible", "Words, greetings and the languages spoken by members.": "Mots, salutations et langues parlées par les membres.", "Songs, rhythms and sounds from each country.": "Chansons, rythmes et sons de chaque pays.", "Traditional and modern dress, and the stories behind them.": "Tenues traditionnelles et modernes, et les histoires qui les accompagnent.", "Visual art, craft and design.": "Art visuel, artisanat et design.", "Festivals, customs and local history.": "Fêtes, coutumes et histoire locale.", "Short stories and experiences shared by members.": "Courts récits et expériences partagés par les membres.", "Movement updates": "Actualités du mouvement", "Manage my membership": "Gérer mon adhésion", "Update your basic details, or remove your membership. Your membership number is permanent.": "Mettez à jour vos informations de base ou supprimez votre adhésion. Votre numéro d'adhésion est permanent.", "Membership number": "Numéro d'adhésion", "Registered": "Inscrit le", "Status": "Statut", "Active member": "Membre actif", "Active": "Actif", "Personal details": "Informations personnelles", "Edit details": "Modifier les informations", "Save changes": "Enregistrer les modifications", "Cancel": "Annuler", "Phone number": "Numéro de téléphone", "Not added yet": "Pas encore ajouté", "Editing": "Modification", "✓ Saved": "✓ Enregistré", "Areas of interest and updates": "Centres d'intérêt et mises à jour", "Edit preferences": "Modifier les préférences", "Save preferences": "Enregistrer les préférences", "Delete my membership": "Supprimer mon adhésion", "Type DELETE to confirm": "Tapez DELETE pour confirmer", "This removes your membership and its details from our records. Your phone number and email become available again for future registration. Your membership number is never reused. This cannot be undone.": "Cela supprime votre adhésion et ses informations de nos registres. Votre numéro de téléphone et votre e-mail redeviennent disponibles pour une future inscription. Votre numéro d'adhésion n'est jamais réutilisé. Cette action est irréversible.", "Updates about Africa United": "Mises à jour sur Africa United"};
+const TRANSLATE_ATTRS = ['placeholder', 'title', 'aria-label'];
+
+function translatedValue(orig) {
+  const key = orig.trim();
+  if (lang === 'fr' && key && FR_DICT[key]) return orig.replace(key, FR_DICT[key]);
+  return orig;
+}
+function translateTextNode(node) {
+  const parent = node.parentNode;
+  if (!parent || parent.nodeName === 'SCRIPT' || parent.nodeName === 'STYLE') return;
+  const current = node.nodeValue;
+  if (APPLIED.get(node) !== current) ORIG.set(node, current);   // new text from the app, so it becomes the original
+  const out = translatedValue(ORIG.get(node));
+  APPLIED.set(node, out);
+  if (node.nodeValue !== out) node.nodeValue = out;
+}
+function translateElementAttrs(el) {
+  TRANSLATE_ATTRS.forEach(name => {
+    if (!el.hasAttribute(name)) return;
+    const cur = el.getAttribute(name);
+    const key = name + ':' + el.nodeName;
+    if (ATTR_APPLIED.get(el)?.[name] !== cur) {
+      ATTR_ORIG.set(el, { ...(ATTR_ORIG.get(el) || {}), [name]: cur });
+    }
+    const orig = ATTR_ORIG.get(el)[name];
+    const out = translatedValue(orig);
+    ATTR_APPLIED.set(el, { ...(ATTR_APPLIED.get(el) || {}), [name]: out });
+    if (el.getAttribute(name) !== out) el.setAttribute(name, out);
+  });
+}
+function translateTree(root) {
+  if (root.nodeType === 3) { translateTextNode(root); return; }
+  if (root.nodeType !== 1 && root.nodeType !== 9) return;
+  const walker = document.createTreeWalker(root.nodeType === 9 ? root.body : root, NodeFilter.SHOW_TEXT);
+  let n;
+  while ((n = walker.nextNode())) translateTextNode(n);
+  const scope = root.nodeType === 1 ? root : document;
+  scope.querySelectorAll('[placeholder],[title],[aria-label]').forEach(translateElementAttrs);
+}
+function applyLang() {
+  ['langSel', 'langSelAuth'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = LANGS.map(l => `<option value="${l.code}">${l.label}</option>`).join('');
+    sel.value = lang;
+  });
+  const cur = LANGS.find(x => x.code === lang);
+  const note = document.getElementById('langNote');
+  if (note) note.textContent = cur && !cur.ready ? 'This language is still being reviewed, so English is shown for now.' : '';
+  translateTree(document.body);
+  if (!observerStarted) {
+    observerStarted = true;
+    new MutationObserver(muts => {
+      muts.forEach(m => {
+        if (m.type === 'characterData') translateTextNode(m.target);
+        m.addedNodes.forEach(n => translateTree(n));
+      });
+    }).observe(document.body, { childList: true, subtree: true, characterData: true });
+  }
+}
+function setLang(code) {
+  lang = code;
+  localStorage.setItem('bct_lang', code);
+  applyLang();
+}
+document.getElementById('langSel')?.addEventListener('change', e => setLang(e.target.value));
+document.getElementById('langSelAuth')?.addEventListener('change', e => setLang(e.target.value));
+
+let myRef = '';
+// Referral code from the link (?ref=CODE). Kept on this device until sign-up.
+const urlRef = new URLSearchParams(location.search).get('ref');
+if (urlRef) localStorage.setItem('bct_ref', urlRef.toUpperCase());
+const refForSignup = () => (localStorage.getItem('bct_ref') || '').toUpperCase();
+
+function maskEmail(e) {
+  if (!e) return '';
+  const [name, domain] = e.split('@');
+  return name.slice(0, 2) + '***@' + (domain || '');
+}
+
+const DOCS = {
+  terms: `
+    <h3>1. Who can use Bash Clips TV</h3>
+    <p>You must be 18 years or older. By creating an account you confirm this.</p>
+    <h3>2. Your account</h3>
+    <p>Keep your password private. You are responsible for activity on your account. Tell us at once if you think someone else is using it.</p>
+    <h3>3. Coins</h3>
+    <p>Coins are a digital credit used to unlock episodes inside the app. Coins have no cash value, cannot be sold or transferred, and are not a bank or money service.</p>
+    <h3>4. Content</h3>
+    <p>Episodes are for personal viewing only. Do not copy, record, re-upload or share episodes outside the app.</p>
+    <h3>5. Referrals</h3>
+    <p>When someone signs up with your personal link, you receive 50 coins and they receive 50 coins. Each new account counts once. Self-referrals and fake accounts are not allowed and will be removed without the coins. Do not use spam, fake accounts, misleading claims or paid advertising to promote your link. Self-referrals are not allowed. We may remove referrals that break these rules.</p>
+    <h3>6. Acceptable use</h3>
+    <p>Do not attempt to access other accounts, break the service, scrape content, or use the app for unlawful purposes.</p>
+    <h3>7. Changes and ending access</h3>
+    <p>We may change the app, prices and these terms. We may suspend or close accounts that break these terms.</p>
+    <h3>8. Liability</h3>
+    <p>The service is provided as is. To the extent the law allows, we are not liable for indirect loss. Nothing here limits rights you have under Nigerian consumer law.</p>
+    <h3>9. Governing law</h3>
+    <p>These terms are governed by the laws of the Federal Republic of Nigeria.</p>
+    <h3>10. Contact</h3>
+    <p>[Company name], [support email], [address].</p>`,
+  privacy: `
+    <h3>What we collect</h3>
+    <ul><li>Account details: email address and name you provide.</li>
+    <li>Coin balance, unlocked episodes and purchase records (amount, date, status).</li>
+    <li>Basic app usage, such as errors, needed to keep the service working.</li></ul>
+    <h3>Payments</h3>
+    <p>Card and bank details are entered on Flutterwave's secure page. We do not store card numbers.</p>
+    <h3>How we use your information</h3>
+    <p>To run your account, deliver purchased coins, prevent fraud, support you, and meet legal duties.</p>
+    <h3>Sharing</h3>
+    <p>We share data only with service providers that run the app (hosting, database, payments), or when the law requires it. We do not sell personal data.</p>
+    <h3>Your rights</h3>
+    <p>Under the Nigeria Data Protection Act 2023 you can ask to see, correct or delete your personal data. Contact us to make a request.</p>
+    <h3>Children</h3>
+    <p>The app is for adults only. We do not knowingly collect data from anyone under 18.</p>
+    <h3>Security</h3>
+    <p>We use encryption in transit and access controls. No system is perfectly secure.</p>
+    <h3>Contact</h3>
+    <p>[Company name], [privacy email].</p>`,
+  refund: `
+    <h3>Coins are digital</h3>
+    <p>Coins are delivered to your account as soon as your payment is confirmed. Because they are digital and used at once, refunds are limited as set out below.</p>
+    <h3>When you can get a refund</h3>
+    <ul><li>You were charged but your coins were not added, and we cannot fix it within 7 days.</li>
+    <li>You were charged twice for the same pack.</li>
+    <li>A technical fault on our side stopped you using paid content.</li></ul>
+    <h3>When you cannot get a refund</h3>
+    <ul><li>Coins you have already used to unlock episodes.</li>
+    <li>Changing your mind after coins are added and used.</li></ul>
+    <h3>How to ask</h3>
+    <p>Email [support email] within 7 days of the payment, with your registered email and the date and amount paid. Approved refunds go back to the original payment method, and any coins not used are removed.</p>
+    <h3>Your rights</h3>
+    <p>These rules do not affect rights you have under Nigerian consumer law.</p>`,
+  guide: `
+    <h3>Sign up and sign in</h3>
+    <p>Tap Sign up, enter your email and a password of at least 6 characters, tick the two boxes, and tap Create account. You receive 50 coins to start.</p>
+    <h3>Watch episodes</h3>
+    <p>Open Watch and tap an episode. Free episodes play straight away. Locked episodes show the coin price first.</p>
+    <h3>Unlock an episode</h3>
+    <p>Tap Unlock on the episode. The coin price is taken from your balance and the episode stays unlocked on your account.</p>
+    <h3>Buy coins</h3>
+    <p>Tap your coin balance at the top. Choose Naira or USD, pick a pack, and pay on the secure Flutterwave page.</p>
+    <h3>Player</h3>
+    <p>Use Full screen to fill the screen. Turn your phone sideways for landscape. Minimize keeps the video small in the corner while you browse. Close stops it.</p>
+    <h3>Invite friends</h3>
+    <p>Open Account and tap Share my link. When a friend signs up with your link, you receive 50 coins and they receive 50 coins.</p>`,
+  parental: `
+    <h3>Adults only</h3>
+    <p>Bash Clips TV contains adult drama. It is for people aged 18 and over. Do not create an account for a child.</p>
+    <h3>For parents and guardians</h3>
+    <ul><li>Keep devices and passwords away from children.</li>
+    <li>Use your phone's own parental controls and app-store restrictions.</li>
+    <li>Sign out on shared devices, using Account, then Sign out.</li>
+    <li>Do not store payment cards on a device children can use.</li></ul>
+    <h3>If a minor uses the app</h3>
+    <p>Email [support email] with the account email. We will close the account and remove the data we hold, as the law requires.</p>
+    <h3>Reporting</h3>
+    <p>To report content that may involve minors or abuse, email [safety email] right away.</p>`,
+};
+
+// Africa United: a navigation page with working links.
+const COUNTRIES = [
+  { code: 'NG', name: 'Nigeria', flag: '🇳🇬' },
+  { code: 'NE', name: 'Niger Republic', flag: '🇳🇪' },
+  { code: 'BF', name: 'Burkina Faso', flag: '🇧🇫' },
+];
+// International dialling codes for Africa (country name, code digits).
+const DIAL_CODES = [
+  ['Algeria','213'],['Angola','244'],['Benin','229'],['Botswana','267'],['Burkina Faso','226'],['Burundi','257'],
+  ['Cabo Verde','238'],['Cameroon','237'],['Central African Republic','236'],['Chad','235'],['Comoros','269'],
+  ['Congo (Republic)','242'],['Congo (DR)','243'],['Côte d’Ivoire','225'],['Djibouti','253'],['Egypt','20'],
+  ['Equatorial Guinea','240'],['Eritrea','291'],['Eswatini','268'],['Ethiopia','251'],['Gabon','241'],['Gambia','220'],
+  ['Ghana','233'],['Guinea','224'],['Guinea-Bissau','245'],['Kenya','254'],['Lesotho','266'],['Liberia','231'],
+  ['Libya','218'],['Madagascar','261'],['Malawi','265'],['Mali','223'],['Mauritania','222'],['Mauritius','230'],
+  ['Morocco','212'],['Mozambique','258'],['Namibia','264'],['Niger Republic','227'],['Nigeria','234'],['Rwanda','250'],
+  ['São Tomé and Príncipe','239'],['Senegal','221'],['Seychelles','248'],['Sierra Leone','232'],['Somalia','252'],
+  ['South Africa','27'],['South Sudan','211'],['Sudan','249'],['Tanzania','255'],['Togo','228'],['Tunisia','216'],
+  ['Uganda','256'],['Zambia','260'],['Zimbabwe','263'],
+];
+const DIAL_SORTED = [...DIAL_CODES].sort((a, b) => b[1].length - a[1].length);
+function dialOptions(selected) {
+  return DIAL_CODES.map(([n, c]) => `<option value="${c}" ${c === selected ? 'selected' : ''}>${esc(n)} (+${c})</option>`).join('');
+}
+// Phone number stored as one string of digits, with the country code first (e.g. 2348012345678).
+function fullPhone(dialId, localId) {
+  const local = $(localId).value.replace(/\D/g, '').replace(/^0+/, '');
+  if (local.length < 6 || local.length > 12) return null;
+  return $(dialId).value + local;
+}
+function splitPhone(full) {
+  if (!full) return { dial: '234', local: '' };
+  const hit = DIAL_SORTED.find(([, c]) => full.startsWith(c));
+  return hit ? { dial: hit[1], local: full.slice(hit[1].length) } : { dial: '234', local: full };
+}
+const INTERESTS = [
+  'Cross-Border Youth Showcase',
+  'Our Culture, Our Story',
+  'African Digital Cinema',
+  'Beyond Borders Youth Exchange',
+];
+function renderCountries() {
+  $('afrCountries').innerHTML = COUNTRIES.map(c =>
+    `<div class="afr-card clickable" role="button" tabindex="0" onclick="openCountry('${c.code}')">
+       <span class="afr-flag">${c.flag}</span><strong>${esc(c.name)}</strong>
+       <span class="afr-count" id="cnt-${c.code}">Loading members...</span>
+       <span class="join">Register or explore →</span>
+     </div>`
+  ).join('');
+  $('afrCount').textContent = COUNTRIES.length;
+}
+async function loadCounts() {
+  const { data, error } = await sb.rpc('africa_member_counts');
+  if (error) {
+    step('counts error: ' + error.message);
+    COUNTRIES.forEach(c => { const el = $('cnt-' + c.code); if (el) el.textContent = 'Count unavailable. Reopen this page to retry.'; });
+    return;
+  }
+  COUNTRIES.forEach(c => {
+    const row = (data || []).find(r => r.country_code === c.code);
+    const n = row ? Number(row.member_count) : 0;
+    const el = $('cnt-' + c.code);
+    if (el) el.textContent = n > 0 ? `${n} member${n === 1 ? '' : 's'}` : 'Be the first to join';
+  });
+}
+async function openCountry(code) {
+  if (user) {
+    const { data } = await sb.from('africa_members').select('country').eq('user_id', user.id).maybeSingle();
+    if (data && data.country === code) { openHub(code); return; }
+  }
+  openJoin(code);
+}
+const HUB_TOPICS = [
+  ['Languages', 'Words, greetings and the languages spoken by members.'],
+  ['Music', 'Songs, rhythms and sounds from each country.'],
+  ['Fashion', 'Traditional and modern dress, and the stories behind them.'],
+  ['Arts and crafts', 'Visual art, craft and design.'],
+  ['Heritage and traditions', 'Festivals, customs and local history.'],
+  ['Stories from members', 'Short stories and experiences shared by members.'],
+];
+function openHub(code) {
+  const c = COUNTRIES.find(x => x.code === code);
+  if (!c) return;
+  $('shell').classList.remove('hidden');
+  $('hubTitle').textContent = `${c.flag} ${c.name}`;
+  $('hubIntro').textContent = `Welcome, member. Explore the culture of ${c.name} and the Africa United movement. Content is being prepared.`;
+  $('hubTopics').innerHTML = HUB_TOPICS.map(([t, d]) =>
+    `<div class="afr-card"><h3>${esc(t)}</h3><p>${esc(d)}</p><span class="soon" style="margin-top:8px">Coming soon</span></div>`
+  ).join('');
+  loadHubNo(code);
+  currentHub = code;
+  go('scr-hub');
+}
+async function loadHubNo(code) {
+  $('hubNo').textContent = '';
+  if (!user) return;
+  const { data } = await sb.from('africa_members').select('country, serial_no').eq('user_id', user.id).maybeSingle();
+  if (data && data.country === code) $('hubNo').textContent = 'Membership number: ' + membershipNo(data);
+}
+function membershipNo(row) {
+  return `AU-${row.country}-${String(row.serial_no).padStart(6, '0')}`;
+}
+$('hubBack').onclick = () => go('scr-africa');
+
+// ---- Country chat: members only, live, with photos and reporting ----
+function chatTime(iso) {
+  return new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+const ICO = {
+  like: '<svg viewBox="0 0 24 24"><path d="M7 10v11H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3zm0 0 4.2-7.4a1.8 1.8 0 0 1 3.3 1.1L13.6 9H19a2 2 0 0 1 2 2.3l-1.3 7.6A2 2 0 0 1 17.7 21H7"/></svg>',
+  share: '<svg viewBox="0 0 24 24"><path d="M14 5l7 7-7 7M21 12H10a6 6 0 0 0-6 6"/></svg>',
+  save: '<svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg>',
+  comment: '<svg viewBox="0 0 24 24"><path d="M21 12a8.5 8.5 0 0 1-12.4 7.5L3 21l1.6-5A8.5 8.5 0 1 1 21 12z"/></svg>',
+};
+function avatarPic(url, name, uid) {
+  const inner = url
+    ? `<img class="av" src="${esc(url)}" alt="" referrerpolicy="no-referrer">`
+    : `<div class="av">${esc(initialsOf(name))}</div>`;
+  return `<span class="avw" data-uid="${esc(uid || '')}">${inner}<i class="dot"></i></span>`;
+}
+var presenceCh = null;
+var onlineIds = new Set();
+function startPresence() {
+  if (presenceCh || !user) return;
+  presenceCh = sb.channel('africa-online', { config: { presence: { key: user.id } } });
+  presenceCh.on('presence', { event: 'sync' }, () => {
+    onlineIds = new Set(Object.keys(presenceCh.presenceState()));
+    paintPresence();
+  }).subscribe(async status => {
+    if (status === 'SUBSCRIBED') await presenceCh.track({ online: true });
+  });
+}
+function stopPresence() {
+  if (presenceCh) { sb.removeChannel(presenceCh); presenceCh = null; }
+  onlineIds = new Set();
+  paintPresence();
+}
+function paintPresence() {
+  const ids = new Set(onlineIds);
+  if (user) ids.add(user.id);
+  document.querySelectorAll('.avw').forEach(el => el.classList.toggle('on', ids.has(el.dataset.uid)));
+  const sub = $('chatSub');
+  if (sub) sub.textContent = `All Africa United members · ${ids.size} online`;
+}
+function initialsOf(name) {
+  const parts = String(name || 'M').trim().split(/\s+/).filter(Boolean);
+  return ((parts[0] || 'M')[0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+}
+function chatItem(m) {
+  const mine = m.user_id === (user && user.id);
+  const c = COUNTRIES.find(x => x.code === m.country);
+  const flag = c ? c.flag : '';
+  const photo = m.media_path ? `<img data-path="${esc(m.media_path)}" alt="Shared photo">` : '';
+  const text = m.body ? `<p>${esc(m.body)}</p>` : '';
+  const who = mine ? '' : `<div class="bwho">${esc(flag)} ${esc(m.author_name || 'Member')}</div>`;
+  const report = mine ? '' : `<div class="bactions" hidden><button type="button" onclick="event.stopPropagation();reportMsg('${esc(m.id)}')">Report this message</button></div>`;
+  const liked = myLikes.has(m.id), saved = mySaves.has(m.id);
+  const acts = `<div class="bact">
+      <button type="button" class="lk${liked ? ' on' : ''}" onclick="event.stopPropagation();toggleLike('${esc(m.id)}')">${ICO.like}<span>Like <b class="lc">${Number(m.like_count) || 0}</b></span></button>
+      <button type="button" onclick="event.stopPropagation();shareMsg('${esc(m.id)}')">${ICO.share}<span>Share</span></button>
+      <button type="button" class="sv${saved ? ' on' : ''}" onclick="event.stopPropagation();toggleSave('${esc(m.id)}')">${ICO.save}<span>${saved ? 'Saved' : 'Save'}</span></button>
+      <button type="button" onclick="event.stopPropagation();toggleComments('${esc(m.id)}')">${ICO.comment}<span>Comment <b class="cc">${Number(m.comment_count) || 0}</b></span></button>
+    </div>`;
+  const _unusedPanel = `<div class="cpanel" hidden data-for="${esc(m.id)}" onclick="event.stopPropagation()">
+      <div class="clist"></div>
+      <div class="cform">
+        <input class="cin" type="text" maxlength="500" placeholder="Write a comment">
+        <button type="button" onclick="sendComment('${esc(m.id)}')">Send</button>
+      </div>
+      <div class="msg cmsg"></div>
+    </div>`;
+  const av = mine ? '' : avatarPic(m.author_avatar, m.author_name, m.user_id);
+  return `<div class="brow ${mine ? 'mine' : 'theirs'}" data-id="${esc(m.id)}">${av}
+    <div class="bubble"${mine ? '' : ' onclick="toggleActions(this)"'}>
+      ${who}${text}${photo}
+      <div class="btime">${esc(chatTime(m.created_at))}</div>
+      ${acts}
+      ${report}
+    </div>
+  </div>`;
+}
+window.toggleActions = el => {
+  const a = el.querySelector('.bactions');
+  if (a) a.hidden = !a.hidden;
+};
+var currentCmt = null;
+function commentHTML(c) {
+  const mine = c.user_id === (user && user.id);
+  const action = mine
+    ? `<button type="button" class="cbtn" onclick="deleteComment('${esc(c.id)}')">Delete</button>`
+    : `<button type="button" class="cbtn" onclick="reportComment('${esc(c.id)}')">Report</button>`;
+  return `<div class="cmt" data-cid="${esc(c.id)}">
+    ${avatarPic(c.author_avatar, c.author_name, c.user_id)}
+    <div class="cbody">
+      <div class="cwho">${esc(c.author_name || 'Member')}</div>
+      ${c.body ? `<div class="ctext">${esc(c.body)}</div>` : ''}${c.media_path ? `<img data-path="${esc(c.media_path)}" alt="Photo" style="max-width:220px;border-radius:12px;margin-top:6px;display:block">` : ''}
+      <div class="cmeta"><span>${esc(chatTime(c.created_at))}</span>${action}</div>
+    </div>
+  </div>`;
+}
+function appendComment(c) {
+  if (!currentCmt || currentCmt !== c.message_id) return;
+  const list = $('cmtList');
+  if (list.querySelector(`[data-cid="${c.id}"]`)) return;
+  const note = list.querySelector('.cnone');
+  if (note) note.remove();
+  list.insertAdjacentHTML('beforeend', commentHTML(c));
+  loadChatPhotos(list);
+  paintPresence();
+  list.scrollTop = list.scrollHeight;
+}
+window.toggleComments = async mid => {
+  currentCmt = mid;
+  $('cmtSheet').classList.remove('hidden');
+  $('cmtMsg').textContent = '';
+  $('cmtList').innerHTML = '<p class="muted cnone">Loading comments...</p>';
+  const { data, error } = await sb.from('africa_comments')
+    .select('id, message_id, user_id, author_name, author_avatar, body, media_path, created_at')
+    .eq('message_id', mid).order('created_at').limit(200);
+  if (currentCmt !== mid) return;
+  if (error) {
+    step('comments load error: ' + error.message);
+    $('cmtList').innerHTML = '<p class="muted cnone">Comments could not be loaded.</p>';
+    return;
+  }
+  $('cmtList').innerHTML = (data || []).map(commentHTML).join('') || '<p class="muted cnone">No comments yet. Be the first to comment.</p>';
+  loadChatPhotos($('cmtList'));
+  paintPresence();
+  $('cmtText').focus();
+};
+window.closeComments = () => {
+  currentCmt = null;
+  $('cmtSheet').classList.add('hidden');
+};
+async function sendComment() {
+  const input = $('cmtText');
+  const text = input.value.trim();
+  const file = $('cmtFile').files[0];
+  if (!currentCmt || !user) return;
+  if (!text && !file) { say('cmtMsg', 'Write a comment or add a photo.'); return; }
+  if (text.length > 500) { say('cmtMsg', 'Comments can be up to 500 characters.'); return; }
+  if (file && !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { say('cmtMsg', 'Please choose a JPG, PNG or WebP photo.'); return; }
+  if (file && file.size > 5 * 1024 * 1024) { say('cmtMsg', 'Please choose a photo under 5 MB.'); return; }
+  $('cmtSend').disabled = true;
+  let media_path = null;
+  if (file) {
+    const small = await shrinkImage(file);
+    const path = `${chatCode}/${user.id}/${crypto.randomUUID()}.jpg`;
+    const up = await sb.storage.from('africa-media').upload(path, small, { contentType: 'image/jpeg' });
+    if (up.error) {
+      step('comment photo upload error: ' + up.error.message);
+      $('cmtSend').disabled = false;
+      say('cmtMsg', 'The photo could not be uploaded. Please try again.');
+      return;
+    }
+    media_path = path;
+  }
+  const { data, error } = await sb.from('africa_comments')
+    .insert({ message_id: currentCmt, user_id: user.id, body: text || null, media_path })
+    .select('id, message_id, user_id, author_name, author_avatar, body, media_path, created_at').single();
+  $('cmtSend').disabled = false;
+  if (error) {
+    step('comment error: ' + error.message);
+    say('cmtMsg', 'Your comment could not be posted. Please try again.');
+    return;
+  }
+  input.value = '';
+  $('cmtFile').value = '';
+  say('cmtMsg', '');
+  appendComment(data);
+}
+$('cmtFile').onchange = () => {
+  const f = $('cmtFile').files[0];
+  say('cmtMsg', f ? '📷 ' + f.name : '');
+};
+$('cmtSend').onclick = () => sendComment();
+$('cmtText').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); sendComment(); } };
+window.deleteComment = async cid => {
+  const { error } = await sb.from('africa_comments').delete().eq('id', cid).eq('user_id', user.id);
+  if (error) { step('comment delete error: ' + error.message); say('cmtMsg', 'Could not delete the comment.'); return; }
+  const el = document.querySelector(`.cmt[data-cid="${cid}"]`);
+  if (el) el.remove();
+};
+window.reportComment = async cid => {
+  const { error } = await sb.from('africa_reports').insert({ comment_id: cid, reporter_id: user.id });
+  if (error && error.code !== '23505') { step('report error: ' + error.message); say('cmtMsg', 'The report could not be sent.'); return; }
+  say('cmtMsg', 'Thank you. This comment has been reported for review.');
+};
+
+var myLikes = new Set();
+var mySaves = new Set();
+async function loadMyEngagement() {
+  const [lk, sv] = await Promise.all([
+    sb.from('africa_likes').select('message_id').eq('user_id', user.id),
+    sb.from('africa_saves').select('message_id').eq('user_id', user.id),
+  ]);
+  myLikes = new Set((lk.data || []).map(r => r.message_id));
+  mySaves = new Set((sv.data || []).map(r => r.message_id));
+}
+window.toggleLike = async id => {
+  if (!user) return;
+  const liked = myLikes.has(id);
+  const btn = document.querySelector(`.brow[data-id="${id}"] .lk`);
+  if (btn) btn.disabled = true;
+  const res = liked
+    ? await sb.from('africa_likes').delete().eq('message_id', id).eq('user_id', user.id)
+    : await sb.from('africa_likes').insert({ message_id: id, user_id: user.id });
+  if (btn) btn.disabled = false;
+  if (res.error) { step('like error: ' + res.error.message); say('chatMsg', 'Could not update your like. Please try again.'); return; }
+  liked ? myLikes.delete(id) : myLikes.add(id);
+  if (btn) btn.classList.toggle('on', !liked);
+};
+window.toggleSave = async id => {
+  if (!user) return;
+  const saved = mySaves.has(id);
+  const btn = document.querySelector(`.brow[data-id="${id}"] .sv`);
+  if (btn) btn.disabled = true;
+  const res = saved
+    ? await sb.from('africa_saves').delete().eq('message_id', id).eq('user_id', user.id)
+    : await sb.from('africa_saves').insert({ message_id: id, user_id: user.id });
+  if (btn) btn.disabled = false;
+  if (res.error) { step('save error: ' + res.error.message); say('chatMsg', 'Could not save this message. Please try again.'); return; }
+  saved ? mySaves.delete(id) : mySaves.add(id);
+  if (btn) { btn.classList.toggle('on', !saved); const t = btn.querySelector('span'); if (t) t.textContent = saved ? 'Save' : 'Saved'; }
+  say('chatMsg', saved ? '' : 'Saved to your list.');
+};
+window.shareMsg = async id => {
+  const el = document.querySelector(`.brow[data-id="${id}"] p`);
+  const text = el ? el.textContent : 'A photo from the Africa United member chat';
+  const shareText = `${text}
+
+Shared from the Africa United member chat.`;
+  if (navigator.share) {
+    try { await navigator.share({ title: 'Africa United', text: shareText, url: location.origin }); return; }
+    catch (err) { /* cancelled: fall back to copy */ }
+  }
+  try { await navigator.clipboard.writeText(shareText); say('chatMsg', 'Copied to your clipboard.'); }
+  catch (err) { say('chatMsg', 'Sharing is not available on this device.'); }
+};
+
+async function loadChatPhotos(root) {
+  root.querySelectorAll('img[data-path]:not([data-loaded])').forEach(async img => {
+    img.dataset.loaded = '1';
+    const { data, error } = await sb.storage.from('africa-media').createSignedUrl(img.dataset.path, 3600);
+    if (data) img.src = data.signedUrl;
+    else { step('photo load error: ' + (error ? error.message : 'unknown')); img.alt = 'Photo unavailable'; }
+  });
+}
+async function shrinkImage(file) {
+  try {
+    const bmp = await createImageBitmap(file);
+    const max = 1280;
+    const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(bmp, 0, 0, w, h);
+    bmp.close && bmp.close();
+    return await new Promise(res => canvas.toBlob(b => res(b || file), 'image/jpeg', 0.82));
+  } catch (err) {
+    step('image shrink fallback: ' + err.message);
+    return file;
+  }
+}
+async function openChat(code) {
+  leaveChat();
+  if (!user) return;
+  chatCode = code;
+  say('chatMsg', '');
+  await loadMyEngagement();
+  const baseCols = 'id, user_id, author_name, author_avatar, body, media_path, created_at, like_count';
+  const q = cols => sb.from('africa_messages').select(cols)
+    .eq('hidden', false).order('created_at', { ascending: false }).limit(50);
+  // comment_count only exists once africa_comments.sql has been run, so fall back without it
+  let { data, error } = await q(baseCols + ', comment_count');
+  if (error && /comment_count/.test(error.message)) {
+    step('comment_count not set up yet: run sql/africa_comments.sql');
+    ({ data, error } = await q(baseCols));
+  }
+  if (error) {
+    step('chat load error: ' + error.message);
+    $('chatList').innerHTML = '<p class="muted">Messages could not be loaded. Please try again.</p>';
+  } else {
+    $('chatList').innerHTML = (data || []).reverse().map(chatItem).join('') || '<p class="muted">No messages yet. Start the conversation.</p>';
+    loadChatPhotos($('chatList'));
+    paintPresence();
+    $('chatList').scrollTop = $('chatList').scrollHeight;
+  }
+  chatChannel = sb.channel('africa-chat-general')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'africa_messages' }, payload => {
+      const m = payload.new;
+      if (m.hidden || chatCode !== code) return;
+      const box = $('chatList');
+      if (box.querySelector('p.muted')) box.innerHTML = '';
+      box.insertAdjacentHTML('beforeend', chatItem(m));
+      loadChatPhotos(box);
+      paintPresence();
+      box.scrollTop = box.scrollHeight;
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'africa_messages' }, payload => {
+      const row = document.querySelector(`.brow[data-id="${payload.new.id}"]`);
+      if (!row) return;
+      const lc = row.querySelector('.lc');
+      if (lc) lc.textContent = Number(payload.new.like_count) || 0;
+      const cc = row.querySelector('.cc');
+      if (cc) cc.textContent = Number(payload.new.comment_count) || 0;
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'africa_comments' }, payload => appendComment(payload.new))
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'africa_comments' }, payload => {
+      const el = document.querySelector(`.cit[data-cid="${payload.old.id}"]`);
+      if (el) el.remove();
+    })
+    .subscribe();
+}
+function showComposer() {
+  $('cmpCompact').hidden = true;
+  $('cmpFull').hidden = false;
+}
+function compactComposer() {
+  if (!$('chatText').value.trim() && !$('chatFile').files.length) {
+    $('cmpFull').hidden = true;
+    $('cmpCompact').hidden = false;
+  }
+}
+$('cmpOpen').onclick = () => { showComposer(); $('chatText').focus(); };
+$('chatText').onfocus = showComposer;
+$('chatList').addEventListener('pointerdown', compactComposer);
+$('chatFile').onchange = () => {
+  const f = $('chatFile').files[0];
+  $('chatFileName').textContent = f ? '📷 ' + f.name : '';
+  if (f) showComposer();
+};
+window.openChatPage = () => {
+  if (!currentHub) return;
+  go('scr-chat');
+  openChat(currentHub);
+};
+$('openChatBtn').onclick = () => openChatPage();
+$('chatBack').onclick = () => { leaveChat(); go('scr-hub'); };
+$('chatSend').onclick = async () => {
+  const text = $('chatText').value.trim();
+  const file = $('chatFile').files[0];
+  if (!chatCode || !user) return;
+  if (!text && !file) { say('chatMsg', 'Write a message or add a photo.'); return; }
+  if (text.length > 1000) { say('chatMsg', 'Messages can be up to 1000 characters.'); return; }
+  if (file && !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { say('chatMsg', 'Please choose a JPG, PNG or WebP photo.'); return; }
+  if (file && file.size > 5 * 1024 * 1024) { say('chatMsg', 'Please choose a photo under 5 MB.'); return; }
+  $('chatSend').disabled = true;
+  say('chatMsg', 'Sending...');
+  let media_path = null;
+  if (file) {
+    const small = await shrinkImage(file);
+    const path = `${chatCode}/${user.id}/${crypto.randomUUID()}.jpg`;
+    const up = await sb.storage.from('africa-media').upload(path, small, { contentType: 'image/jpeg' });
+    if (up.error) {
+      step('photo upload error: ' + up.error.message);
+      say('chatMsg', 'The photo could not be uploaded. Please try again.');
+      $('chatSend').disabled = false;
+      return;
+    }
+    media_path = path;
+  }
+  const { error } = await sb.from('africa_messages').insert({ country: chatCode, user_id: user.id, body: text || null, media_path });
+  $('chatSend').disabled = false;
+  if (error) {
+    step('message error: ' + error.message);
+    say('chatMsg', 'Your message could not be sent. Please try again.');
+    return;
+  }
+  $('chatText').value = '';
+  $('chatFile').value = '';
+  $('chatFileName').textContent = '';
+  say('chatMsg', '');
+  compactComposer();
+};
+window.reportMsg = async id => {
+  const { error } = await sb.from('africa_reports').insert({ message_id: id, reporter_id: user.id });
+  if (error && error.code !== '23505') { step('report error: ' + error.message); say('chatMsg', 'The report could not be sent.'); return; }
+  say('chatMsg', 'Thank you. This message has been reported for review.');
+};
+
+let currentJoin = null;
+function openJoin(code) {
+  const c = COUNTRIES.find(x => x.code === code);
+  if (!c) return;
+  currentJoin = c;
+  $('shell').classList.remove('hidden');
+  go('scr-join');
+  renderJoin();
+}
+async function renderJoin() {
+  const c = currentJoin;
+  $('joinTitle').textContent = `${c.flag} ${c.name}`;
+  $('joinIntro').textContent = 'Membership request for the Africa United movement. Membership benefits and programme details will be announced.';
+  if (!user) {
+    $('joinBody').innerHTML = `<p>Please sign in to register. Your membership request is linked to your account.</p>
+      <button type="button" id="joinSignIn">Sign in to register</button>`;
+    $('joinSignIn').onclick = () => go('scr-auth');
+    return;
+  }
+  const { data, error } = await sb.from('africa_members').select('country, serial_no').eq('user_id', user.id).maybeSingle();
+  if (error) {
+    step('membership check error: ' + error.message);
+    $('joinBody').innerHTML = `<p>We could not check your registration. Please try again later.</p>`;
+    return;
+  }
+  if (data) {
+    const owner = COUNTRIES.find(x => x.code === data.country);
+    const ownerName = owner ? owner.name : data.country;
+    $('joinBody').innerHTML = `<p>You are already a member of Africa United for <strong>${esc(ownerName)}</strong>.</p>
+      <p>Membership number: <strong>${esc(membershipNo(data))}</strong></p>
+      <p>Each person can hold one membership, so a second country cannot be added to the same account.</p>
+      <button type="button" id="joinExplore">Open my member hub</button>`;
+    $('joinExplore').onclick = () => openHub(data.country);
+    return;
+  }
+  $('joinBody').innerHTML = `
+    <label for="jName">Full name</label>
+    <input id="jName" type="text" autocomplete="name">
+    <label>Country</label>
+    <p style="margin:4px 0">${c.flag} ${esc(c.name)}</p>
+    <label for="jCity">City or state</label>
+    <input id="jCity" type="text">
+    <label>Phone number (required, used to confirm your membership)</label>
+    <div class="phonerow">
+      <select id="jDial" class="langsel">${dialOptions(c.code === 'NG' ? '234' : c.code === 'NE' ? '227' : '226')}</select>
+      <input id="jPhone" type="tel" autocomplete="tel" placeholder="Number without the country code">
+    </div>
+    <label>Areas you are interested in (optional)</label>
+    ${INTERESTS.map(t => `<label class="chk"><input type="checkbox" class="jInt" value="${esc(t)}"> ${esc(t)}</label>`).join('')}
+    <label class="chk"><input type="checkbox" id="jUpdates"> Send me updates about Africa United.</label>
+    <label class="chk"><input type="checkbox" id="jJ18"> I confirm I am 18 years or older.</label>
+    <label class="chk"><input type="checkbox" id="jJTerms"> I agree to the Terms &amp; Conditions and Privacy Policy.</label>
+    <button type="button" id="jSubmit">Register as a member</button>
+    <div class="msg" id="jMsg"></div>`;
+  $('jSubmit').onclick = submitJoin;
+}
+async function submitJoin() {
+  const name = $('jName').value.trim();
+  const phone = fullPhone('jDial', 'jPhone');
+  if (!name) { say('jMsg', 'Please enter your full name.'); return; }
+  if (!phone) { say('jMsg', 'Please enter a valid phone number, without the country code.'); return; }
+  if (!$('jJ18').checked || !$('jJTerms').checked) {
+    say('jMsg', 'Please confirm you are 18 or older and accept the Terms and Privacy Policy.');
+    return;
+  }
+  const interests = [...document.querySelectorAll('.jInt:checked')].map(i => i.value);
+  $('jSubmit').disabled = true;
+  const { data, error } = await sb.from('africa_members').insert({
+    user_id: user.id,
+    country: currentJoin.code,
+    full_name: name,
+    city: $('jCity').value.trim() || null,
+    phone,
+    interests,
+    updates_opt_in: $('jUpdates').checked,
+  }).select('country, serial_no').single();
+  $('jSubmit').disabled = false;
+  if (error) {
+    if (error.code === '23505') {
+      const m = error.message || '';
+      if (m.includes('phone')) say('jMsg', 'This phone number is already registered with Africa United.');
+      else if (m.includes('email')) say('jMsg', 'This email is already registered with Africa United.');
+      else say('jMsg', 'You already have a membership. Each person can hold one.');
+      return;
+    }
+    step('membership error: ' + error.message);
+    say('jMsg', 'We could not save your registration. Please try again.');
+    return;
+  }
+  $('joinBody').innerHTML = `<p>Thank you, ${esc(name)}. Your membership for ${esc(currentJoin.name)} is recorded.</p>
+    <p>Membership number: <strong>${esc(membershipNo(data))}</strong></p>
+    <p>Please keep this number for your records. Membership benefits and programme details will be announced.</p>
+    <button type="button" id="joinExplore">Explore ${esc(currentJoin.name)}</button>`;
+  $('joinExplore').onclick = () => openHub(currentJoin.code);
+}
+$('joinBack').onclick = () => go('scr-africa');
+$('manageBack').onclick = () => go('scr-africa');
+$('acctBack').onclick = () => go('scr-watch');
+$('avFile').onchange = e => uploadAvatar(e.target.files[0]);
+
+// Profile photo: Google photo if signed in with Google, otherwise an uploaded photo, otherwise initials.
+function avatarUrl() {
+  const m = user?.user_metadata || {};
+  return m.avatar_url || m.picture || null;
+}
+function initials() {
+  const m = user?.user_metadata || {};
+  const n = (m.full_name || user?.email || '?').trim();
+  const parts = n.split(/[\s@._-]+/).filter(Boolean);
+  return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || '?';
+}
+function avatarHTML(size) {
+  const url = avatarUrl();
+  const base = `width:${size}px;height:${size}px;border-radius:50%;flex:0 0 ${size}px;border:2px solid rgba(201,162,39,.6);`;
+  const inner = url
+    ? `<img src="${esc(url)}" alt="Profile photo" referrerpolicy="no-referrer" style="${base}object-fit:cover">`
+    : `<span style="${base}display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#3B82F6,#4F46E5);color:#fff;font-weight:700;font-size:${Math.round(size * 0.36)}px;font-family:system-ui,-apple-system,sans-serif">${esc(initials())}</span>`;
+  const d = Math.max(9, Math.round(size * 0.3));
+  // The signed-in member is always shown as online while the app is open
+  return `<span class="avw on" data-uid="${esc(user?.id || '')}" style="position:relative;display:inline-block;width:${size}px;height:${size}px;flex:0 0 ${size}px;margin-top:0">${inner}<i class="dot" style="width:${d}px;height:${d}px"></i></span>`;
+}
+function isGoogleAccount() {
+  const ids = user?.identities || [];
+  return user?.app_metadata?.provider === 'google' || ids.some(i => i.provider === 'google');
+}
+function renderAvatars() {
+  if (!user) return;
+  const google = isGoogleAccount();
+  $('avUploadBox').hidden = google;
+  $('avGoogleNote').hidden = !google;
+  const sizes = { topAvatar: 34, acctAvatar: 84, hubAvatar: 48 };
+  Object.entries(sizes).forEach(([id, size]) => { const el = $(id); if (el) el.innerHTML = avatarHTML(size); });
+  paintPresence();
+}
+async function uploadAvatar(file) {
+  if (!user || !file) return;
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { say('avMsg', 'Please choose a JPG, PNG or WebP image.'); return; }
+  if (file.size > 2 * 1024 * 1024) { say('avMsg', 'Please choose an image under 2 MB.'); return; }
+  say('avMsg', 'Uploading...');
+  const path = `${user.id}/avatar`;
+  const up = await sb.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type });
+  if (up.error) { step('avatar upload error: ' + up.error.message); say('avMsg', 'Upload failed. Please try again.'); return; }
+  const { data } = sb.storage.from('avatars').getPublicUrl(path);
+  const r = await sb.auth.updateUser({ data: { avatar_url: data.publicUrl + '?v=' + Date.now() } });
+  if (r.error) { step('avatar save error: ' + r.error.message); say('avMsg', 'Photo uploaded, but it could not be saved to your account.'); return; }
+  user = r.data.user;
+  renderAvatars();
+  say('avMsg', 'Your profile photo has been updated.');
+}
+$('hubManage').onclick = () => openManage();
+$('acctManage').onclick = () => openManage();
+
+async function openManage() {
+  if (!user) { go('scr-auth'); return; }
+  $('shell').classList.remove('hidden');
+  const { data, error } = await sb.from('africa_members').select('*').eq('user_id', user.id).maybeSingle();
+  if (error) { step('manage load error: ' + error.message); say('catalogMsg', 'We could not load your membership. Please try again.'); return; }
+  if (!data) {
+    say('listMsg', 'You do not have a membership yet. Choose a country on the Africa United page to register.');
+    go('scr-africa');
+    return;
+  }
+  renderManage(data);
+  go('scr-manage');
+}
+
+let manageUI = { details: 'view', prefs: 'view' };
+let manageRow = null;
+function statePill(st) {
+  if (st === 'saved') return '<span class="savedpill">✓ Saved</span>';
+  if (st === 'edit') return '<span class="editpill">Editing</span>';
+  return '';
+}
+function renderManage(m, keepState) {
+  manageRow = m;
+  if (!keepState) manageUI = { details: 'view', prefs: 'view' };
+  const c = COUNTRIES.find(x => x.code === m.country);
+  const name = c ? c.name : m.country;
+  const flag = c ? c.flag : '';
+  const date = new Date(m.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  const updated = new Date(m.updated_at || m.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  const phoneShown = m.phone ? '+' + m.phone : 'Not added yet';
+
+  const detailsBody = manageUI.details === 'edit'
+    ? `<label for="mFullName">Full name</label>
+       <input id="mFullName" type="text" value="${esc(m.full_name)}">
+       <label for="mDisplay">Display name (shown to other members in the chat)</label>
+       <input id="mDisplay" type="text" maxlength="40" value="${esc(m.display_name || '')}">
+       <label for="mCity">City or state</label>
+       <input id="mCity" type="text" value="${esc(m.city || '')}">
+       <label>Phone number (required)</label>
+       <div class="phonerow">
+         <select id="mDial" class="langsel">${dialOptions(splitPhone(m.phone).dial)}</select>
+         <input id="mPhone" type="tel" autocomplete="tel" value="${esc(splitPhone(m.phone).local)}" placeholder="Number without the country code">
+       </div>
+       <div class="btnrow"><button type="button" id="mSave">Save changes</button><button type="button" class="alt" id="mCancel">Cancel</button></div>
+       <div class="msg" id="mMsg"></div>`
+    : `<dl class="kv">
+         <dt>Full name</dt><dd>${esc(m.full_name)}</dd>
+         <dt>Display name</dt><dd>${esc(m.display_name || '—')}</dd>
+         <dt>City or state</dt><dd>${esc(m.city || '—')}</dd>
+         <dt>Phone number</dt><dd>${esc(phoneShown)}</dd>
+         <dt>Email</dt><dd>${esc(maskEmail(m.email))}</dd>
+       </dl>
+       <div class="btnrow"><button type="button" class="alt" id="mEdit">Edit details</button></div>`;
+
+  const prefsBody = manageUI.prefs === 'edit'
+    ? `${INTERESTS.map(t => `<label class="chk"><input type="checkbox" class="mInt" value="${esc(t)}" ${(m.interests || []).includes(t) ? 'checked' : ''}> ${esc(t)}</label>`).join('')}
+       <label class="chk"><input type="checkbox" id="mUpdates" ${m.updates_opt_in ? 'checked' : ''}> Send me updates about Africa United.</label>
+       <div class="btnrow"><button type="button" id="mSaveInterests">Save preferences</button><button type="button" class="alt" id="mCancelPrefs">Cancel</button></div>
+       <div class="msg" id="mMsg2"></div>`
+    : `<ul class="kvlist">
+         ${INTERESTS.map(t => `<li>${(m.interests || []).includes(t) ? '✓' : '–'} ${esc(t)}</li>`).join('')}
+         <li>${m.updates_opt_in ? '✓' : '–'} Updates about Africa United</li>
+       </ul>
+       <div class="btnrow"><button type="button" class="alt" id="mEditPrefs">Edit preferences</button></div>`;
+
+  $('manageBody').innerHTML = `
+    <div class="card plain" style="display:flex;align-items:center;gap:14px">
+      ${avatarHTML(60)}
+      <div>
+        <strong style="font-size:1.05rem;display:block">${esc(m.full_name)}</strong>
+        <span class="activepill" style="margin-top:6px">Active member</span>
+      </div>
+    </div>
+
+    <div class="card plain">
+      <div class="mg-head">
+        <div><span>Membership number</span><strong>${esc(membershipNo(m))}</strong></div>
+        <div><span>Country</span><strong>${flag} ${esc(name)}</strong></div>
+        <div><span>Registered</span><strong>${esc(date)}</strong></div>
+        <div><span>Status</span><strong><span class="status-pill">Active</span></strong></div>
+      </div>
+      <p class="muted" style="margin-top:8px">Last updated: ${esc(updated)}. The country and membership number cannot be changed.</p>
+    </div>
+
+    <div class="card plain mg-section ${manageUI.details === 'saved' ? 'saved-card' : ''}">
+      <div class="sechead"><h2>Personal details</h2>${statePill(manageUI.details)}</div>
+      ${detailsBody}
+    </div>
+
+    <div class="card plain mg-section ${manageUI.prefs === 'saved' ? 'saved-card' : ''}">
+      <div class="sechead"><h2>Areas of interest and updates</h2>${statePill(manageUI.prefs)}</div>
+      ${prefsBody}
+    </div>
+
+    <div class="card plain mg-section mg-danger">
+      <h2>Delete my membership</h2>
+      <p class="muted">This removes your membership and its details from our records. Your phone number and email become available again for future registration. Your membership number is never reused. This cannot be undone.</p>
+      <label for="mConfirm">Type DELETE to confirm</label>
+      <input id="mConfirm" type="text" autocomplete="off">
+      <button type="button" class="danger" id="mDelete">Delete my membership</button>
+      <div class="msg" id="mMsg3"></div>
+    </div>`;
+
+  const on = (id, fn) => { const el = $(id); if (el) el.onclick = fn; };
+  on('mEdit', () => { manageUI.details = 'edit'; renderManage(manageRow, true); });
+  on('mCancel', () => { manageUI.details = 'view'; renderManage(manageRow, true); });
+  on('mSave', () => saveDetails());
+  on('mEditPrefs', () => { manageUI.prefs = 'edit'; renderManage(manageRow, true); });
+  on('mCancelPrefs', () => { manageUI.prefs = 'view'; renderManage(manageRow, true); });
+  on('mSaveInterests', () => saveInterests());
+  on('mDelete', () => deleteMembership(m));
+}
+
+async function saveDetails() {
+  const name = $('mFullName').value.trim();
+  const phone = fullPhone('mDial', 'mPhone');
+  if (!name) { say('mMsg', 'Please enter your full name.'); return; }
+  if (!phone) { say('mMsg', 'Please enter a valid phone number, without the country code.'); return; }
+  $('mSave').disabled = true;
+  const { data, error } = await sb.from('africa_members')
+    .update({ full_name: name, display_name: $('mDisplay').value.trim() || name.split(' ')[0], city: $('mCity').value.trim() || null, phone })
+    .eq('user_id', user.id).select('*').single();
+  $('mSave').disabled = false;
+  if (error) {
+    if (error.code === '23505') {
+      say('mMsg', (error.message || '').includes('phone') ? 'This phone number is already registered with Africa United.' : 'This detail is already in use.');
+      return;
+    }
+    step('manage save error: ' + error.message);
+    say('mMsg', 'We could not save your details. Please try again.');
+    return;
+  }
+  manageUI.details = 'saved';
+  renderManage(data, true);
+}
+
+async function saveInterests() {
+  const interests = [...document.querySelectorAll('.mInt:checked')].map(i => i.value);
+  const { data, error } = await sb.from('africa_members')
+    .update({ interests, updates_opt_in: $('mUpdates').checked })
+    .eq('user_id', user.id).select('*').single();
+  if (error) {
+    step('manage preferences error: ' + error.message);
+    say('mMsg2', 'We could not save your preferences. Please try again.');
+    return;
+  }
+  manageUI.prefs = 'saved';
+  renderManage(data, true);
+}
+
+async function deleteMembership(m) {
+  if ($('mConfirm').value.trim() !== 'DELETE') {
+    say('mMsg3', 'Please type DELETE in capital letters to confirm.');
+    return;
+  }
+  $('mDelete').disabled = true;
+  const { error } = await sb.from('africa_members').delete().eq('user_id', user.id);
+  $('mDelete').disabled = false;
+  if (error) {
+    step('membership delete error: ' + error.message);
+    say('mMsg3', 'We could not delete your membership. Please try again.');
+    return;
+  }
+  step('membership deleted: ' + membershipNo(m));
+  say('listMsg', 'Your membership has been deleted. You can register again at any time.');
+  go('scr-africa');
+}
+$('afrOpenAuth').onclick = () => openAfrica();
+function openAfrica() {
+  renderCountries();
+  loadCounts();
+  $('shell').classList.remove('hidden');
+  go('scr-africa');
+}
+document.querySelectorAll('#scr-africa [data-scroll]').forEach(b => b.onclick = () => {
+  const el = $(b.dataset.scroll);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+document.querySelectorAll('#scr-africa [data-tab]').forEach(b => b.onclick = () => $(b.dataset.tab).click());
+
+function openLegal(key) {
+  $('docBody').innerHTML = DOCS[key] || DOCS.terms;
+  if (user) {
+    $('shell').classList.remove('hidden');
+    go('scr-legal');
+  } else {
+    $('shell').classList.remove('hidden');
+    go('scr-legal');
+  }
+}
+document.querySelectorAll('.legalOpen').forEach(b => b.onclick = () => openLegal(b.dataset.doc));
+$('legalBack').onclick = () => (user ? go('scr-account') : go('scr-auth'));
+
+// Share: native share sheet where available, otherwise copy and social buttons.
+function shareUrl() { return `${location.origin}/?ref=${myRef}`; }
+function renderRef() {
+  $('refLink').textContent = myRef ? shareUrl() : 'Your link will appear here after sign-in.';
+}
+$('shareBtn').onclick = async () => {
+  if (!myRef) { say('shareMsg', 'Your link is not ready yet. Try again in a moment.'); return; }
+  const url = shareUrl();
+  const text = 'Join me on Bash Clips TV.';
+  if (navigator.share) {
+    try { await navigator.share({ title: 'Bash Clips TV', text, url }); say('shareMsg', 'Thanks for sharing.'); return; }
+    catch (err) { /* cancelled: fall through to the buttons */ }
+  }
+  const t = encodeURIComponent(text + ' ' + url);
+  const u = encodeURIComponent(url);
+  $('shareRow').innerHTML = `
+    <button type="button" onclick="window.open('https://wa.me/?text=${t}','_blank')">WhatsApp</button>
+    <button type="button" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=${u}','_blank')">Facebook</button>
+    <button type="button" onclick="window.open('https://twitter.com/intent/tweet?text=${t}','_blank')">X</button>
+    <button type="button" onclick="window.open('https://t.me/share/url?url=${u}&text=${encodeURIComponent(text)}','_blank')">Telegram</button>
+    <button type="button" class="alt" onclick="navigator.clipboard.writeText('${url}').then(()=>say('shareMsg','Link copied.'))">Copy link</button>`;
+  say('shareMsg', 'Choose where to share.');
+};
+let fallbackTimer = null;
+let episodes = [];
+let balance = 0;
+let currentEp = null;
+const activity = [];
+
+/* ---------- Activity log (visible in Account) ---------- */
+function step(text) {
+  const line = new Date().toLocaleTimeString() + '  ' + text;
+  console.log(line);
+  activity.push(line);
+  if (activity.length > 200) activity.shift();
+}
+
+/* ---------- Shared player ---------- */
+let playerMode = 'none';   // 'none' | 'full' | 'mini'
+const pv = $('pv');
+let player = null;
+async function ensurePlayer() {
+  if (player) return player;
+  try { await loadScript(PLYR_SRC); } catch (err) { step(err.message); }
+  if (typeof Plyr === 'undefined') return null;
+  player = new Plyr(pv, {
+  controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'settings', 'fullscreen'],
+  settings: ['speed'],
+  speed: { selected: 1, options: [0.5, 1, 1.25, 1.5, 2] },
+  });
+  return player;
+}
+pv.addEventListener('error', () => {
+  step('video failed to load');
+  say('epMsg', 'This video could not play. Please try again later.');
+});
+async function loadVideo(url) {
+  const p = await ensurePlayer();
+  if (p) p.source = { type: 'video', sources: [{ src: url, type: 'video/mp4' }] };
+  else { pv.src = url; pv.load(); }
+}
+function applyPlayer() {
+  const onEpisode = !$('scr-episode').classList.contains('hidden');
+  const cls = playerMode === 'none' ? 'hidden' : ((playerMode === 'full' && onEpisode) ? 'full' : 'mini');
+  $('player').className = cls;
+}
+function stopPlayer() {
+  if (player) player.pause();
+  else { pv.pause(); pv.removeAttribute('src'); pv.load(); }
+  pv.removeAttribute('data-src');
+  playerMode = 'none';
+  applyPlayer();
+}
+$('pMin').onclick = () => { playerMode = 'mini'; go('scr-watch'); };
+$('pOpen').onclick = () => { if (currentEp) openEpisode(currentEp.id); };
+$('pClose').onclick = () => stopPlayer();
+$('pFull').onclick = async () => {
+  try {
+    if (pv.requestFullscreen) await pv.requestFullscreen();
+    else if (pv.webkitEnterFullscreen) pv.webkitEnterFullscreen();
+    else { step('Full screen is not supported on this browser.'); return; }
+    try { await screen.orientation.lock('landscape'); } catch (e) { /* phone may not allow auto-rotate; turn the phone sideways */ }
+  } catch (err) {
+    step('full screen failed: ' + err.message);
+  }
+};
+$('pX').onclick = () => stopPlayer();
+
+/* ---------- Screen switching ---------- */
+const SCREENS = ['scr-auth','scr-watch','scr-episode','scr-coins','scr-buy','scr-account','scr-legal','scr-africa','scr-join','scr-hub','scr-manage','scr-chat'];
+var currentHub = null;
+var chatChannel = null;
+var chatCode = null;
+function leaveChat() {
+  if (chatChannel) { sb.removeChannel(chatChannel); chatChannel = null; }
+  chatCode = null;
+}
+function go(name) {
+  if (name !== 'scr-hub' && name !== 'scr-chat') leaveChat();
+  SCREENS.forEach(s => $(s)?.classList.toggle('hidden', s !== name));
+  const inShell = name !== 'scr-auth';
+  $('shell').classList.toggle('hidden', !inShell);
+  document.querySelectorAll('.tabs button').forEach(b => b.className = b.id === tabFor(name) ? '' : 'alt');
+  applyPlayer();
+  window.scrollTo(0, 0);
+}
+function tabFor(screen) {
+  if (screen === 'scr-coins' || screen === 'scr-buy') return 'tCoins';
+  if (screen === 'scr-account' || screen === 'scr-legal') return 'tAccount';
+  if (screen === 'scr-manage') return 'tMember';
+  if (screen === 'scr-africa' || screen === 'scr-join' || screen === 'scr-hub' || screen === 'scr-chat') return 'tAfrica';
+  return 'tWatch';
+}
+
+/* ---------- Balance ---------- */
+async function loadBalance() {
+  if (!user) return;
+  const { data, error } = await sb.from('profiles').select('coin_balance, referral_code').eq('id', user.id).single();
+  myRef = data?.referral_code || '';
+  renderRef();
+  if (error) { step('balance error: ' + error.message); return; }
+  balance = data?.coin_balance ?? 0;
+  $('balChip').textContent = balance + ' coins';
+  $('coinsBig').textContent = balance;
+}
+
+/* ---------- Session router ---------- */
+async function route(session) {
+  clearTimeout(fallbackTimer); fallbackTimer = null;
+  if (!session?.user) {
+    user = null; token = null; shownFor = null;
+    stopPresence();
+    step('no session: showing sign-in');
+    $('shell').classList.add('hidden');
+    go('scr-auth');
+    return;
+  }
+  user = session.user; token = session.access_token;
+  startPresence();
+  if (shownFor === user.id) return;
+  shownFor = user.id;
+  step('signed in as ' + user.email);
+  $('acctEmail').textContent = maskEmail(user.email);
+  renderAvatars();
+  await loadCatalog();
+  await loadBalance();
+  go('scr-watch');
+}
+
+sb.auth.onAuthStateChange((event, session) => {
+  step('auth event: ' + event + (session?.user ? ' (session)' : ' (no session)'));
+  if (event === 'SIGNED_OUT') { route(null); return; }
+  if (session?.user) { route(session); return; }
+  if (!fallbackTimer && !user) {
+    fallbackTimer = setTimeout(() => { fallbackTimer = null; if (!user) route(null); }, 2500);
+  }
+});
+
+/* ---------- Sign-in / sign-up ---------- */
+function setMode(next) {
+  mode = next;
+  $('tabIn').className = mode === 'in' ? '' : 'alt';
+  $('tabUp').className = mode === 'up' ? '' : 'alt';
+  $('authGo').textContent = mode === 'in' ? 'Sign in' : 'Create account (+50 coins)';
+  setSignupConsentVisible();
+  say('authMsg', mode === 'up' ? 'Sign up gives you 50 coins.' : '');
+}
+$('tabIn').onclick = () => setMode('in');
+$('tabUp').onclick = () => setMode('up');
+setMode('in');
+
+let busy = false;
+function setSignupConsentVisible() { $('signupConsent').classList.toggle('hidden', mode !== 'up'); }
+$('authGo').onclick = async () => {
+  if (busy) return;
+  const email = $('email').value.trim();
+  const password = $('pass').value;
+  if (!email || !password) { say('authMsg', 'Enter your email and password.'); return; }
+  if (mode === 'up' && password.length < 6) { say('authMsg', 'Password must be at least 6 characters.'); return; }
+  if (mode === 'up' && (!$('chk18').checked || !$('chkTerms').checked)) {
+    say('authMsg', 'Please confirm you are 18 or older and accept the Terms & Conditions to create an account.');
+    return;
+  }
+  busy = true; $('authGo').disabled = true;
+  step((mode === 'in' ? 'sign-in' : 'sign-up') + ' for ' + email);
+  say('authMsg', mode === 'in' ? 'Signing in...' : 'Creating your account...');
+  try {
+    const r = mode === 'in'
+      ? await sb.auth.signInWithPassword({ email, password })
+      : await sb.auth.signUp({
+          email, password,
+          options: { data: { ref: refForSignup() || null, over18: true, terms_accepted: true, terms_version: '2026-11' } },
+        });
+    if (r.error) { step('auth error: ' + r.error.message); say('authMsg', r.error.message); return; }
+    step('auth ok, session: ' + (r.data.session ? 'yes' : 'no'));
+    if (r.data.session) { await route(r.data.session); return; }
+    say('authMsg', 'Please check your email to confirm your account, then sign in.');
+  } catch (err) {
+    step('auth exception: ' + err.message);
+    say('authMsg', 'Something went wrong: ' + err.message);
+  } finally {
+    busy = false; $('authGo').disabled = false;
+  }
+};
+$('google').onclick = () => sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin } });
+$('guest').onclick = () => { step('browsing as guest'); $('shell').classList.remove('hidden'); loadCatalog(); go('scr-watch'); };
+
+/* ---------- Tabs ---------- */
+$('tWatch').onclick = () => { go('scr-watch'); loadCatalog(); };
+$('tCoins').onclick = () => { go('scr-coins'); loadBalance(); };
+$('tMember').onclick = () => openManage();
+$('tAccount').onclick = () => go('scr-account');
+$('balChip').onclick = () => { if (!user) { go('scr-auth'); return; } renderPacks(); go('scr-buy'); };
+$('goBuy').onclick = () => { renderPacks(); go('scr-buy'); };
+
+$('buyBack').onclick = () => go('scr-coins');
+$('epBack').onclick = () => go('scr-watch');
+
+$('signOut').onclick = async () => {
+  step('sign-out tapped');
+  const { error } = await sb.auth.signOut();
+  if (error) step('sign-out error: ' + error.message);
+  route(null);
+};
+
+/* ---------- Catalog (Watch screen) ---------- */
+// Consent: the app uses only what it needs to run. Optional cookies are not used yet.
+function initConsent() {
+  if (localStorage.getItem('bct_consent')) return;
+  const b = document.createElement('div');
+  b.id = 'consent';
+  b.innerHTML = `<p>We use cookies to keep you signed in and to run the app. Optional cookies are not used yet. See our <button type="button" class="linkbtn" id="cPriv">Privacy Policy</button>.</p>
+    <div class="cbtns"><button type="button" class="alt" id="cNec">Necessary only</button><button type="button" id="cAll">Accept all</button></div>`;
+  document.body.appendChild(b);
+  $('cNec').onclick = () => { localStorage.setItem('bct_consent', 'necessary'); b.remove(); };
+  $('cAll').onclick = () => { localStorage.setItem('bct_consent', 'all'); b.remove(); };
+  $('cPriv').onclick = () => openLegal('privacy');
+}
+
+async function loadCatalog() {
+  const { data, error } = await sb.from('episodes')
+    .select('id, episode_number, is_free, coin_cost, series:series_id(title), episode_videos(video_url)')
+    .order('episode_number');
+  if (error) { say('listMsg', error.message); step('catalog error: ' + error.message); return; }
+  episodes = data;
+  step('catalog loaded: ' + data.length + ' episodes');
+  const html = data.map(e => {
+    const unlocked = !!e.episode_videos?.[0]?.video_url;
+    const status = e.is_free ? '<span class="badge">Free</span>' : (unlocked ? '' : `<span class="muted"> · ${e.coin_cost} coins</span>`);
+    return `<div class="card" onclick="openEpisode('${e.id}')">
+      <h2>${esc(e.series.title)} · Episode ${e.episode_number} ${status}</h2>
+      <p class="muted">${unlocked || e.is_free ? 'Tap to watch' : 'Tap to unlock'}</p>
+    </div>`;
+  }).join('');
+  $('list').innerHTML = html || '<p class="muted">No episodes yet.</p>';
+}
+
+/* ---------- Episode screen: player or unlock ---------- */
+window.openEpisode = async id => {
+  const e = episodes.find(x => x.id === id);
+  if (!e) return;
+  currentEp = e;
+  say('epMsg', '');
+  const title = `${esc(e.series.title)} · Episode ${e.episode_number}`;
+
+  let url = e.episode_videos?.[0]?.video_url;
+  if (!url) {
+    const { data, error } = await sb.from('episode_videos').select('video_url').eq('episode_id', e.id).limit(1);
+    if (error) step('video lookup error: ' + error.message);
+    url = data?.[0]?.video_url;
+  }
+
+  if (url) {
+    if (pv.getAttribute('data-src') !== url) {
+      loadVideo(url);
+      pv.setAttribute('data-src', url);
+    }
+    $('ptitle').textContent = `${e.series.title} · Episode ${e.episode_number}`;
+    $('epCard').innerHTML = `<h2>${title}</h2><p class="muted">${e.is_free ? 'Free episode' : 'Unlocked'}</p>`;
+    playerMode = 'full';
+  } else {
+    stopPlayer();
+    if (e.is_free) {
+      step('no video link returned for free episode ' + e.episode_number);
+      $('epCard').innerHTML = `<h2>${title}</h2>
+        <p>We could not load this episode's video. Please try again in a few minutes.</p>`;
+    } else {
+      $('epCard').innerHTML = `<h2>${title}</h2>
+        <p>Locked. Unlock this episode for ${e.coin_cost} coins.</p>
+        <p class="muted">Your balance: ${balance} coins</p>
+        <button type="button" id="unlockBtn">Unlock for ${e.coin_cost} coins</button>`;
+      $('unlockBtn').onclick = () => unlock(e.id);
+    }
+  }
+  go('scr-episode');
+};
+
+async function unlock(episodeId) {
+  if (!user) { say('epMsg', 'Sign in to unlock episodes.'); return; }
+  const btn = $('unlockBtn'); if (btn) btn.disabled = true;
+  say('epMsg', 'Unlocking...');
+  step('unlock tapped for ' + episodeId);
+  const { error } = await sb.rpc('unlock_episode', { p_episode_id: episodeId });
+  if (error) {
+    step('unlock error: ' + error.message);
+    say('epMsg', error.message.includes('not enough coins') ? 'Not enough coins. Buy more under Coins.' : error.message);
+    if (btn) btn.disabled = false;
+    return;
+  }
+  await loadCatalog();
+  await loadBalance();
+  step('unlock ok, balance now ' + balance);
+  openEpisode(episodeId);
+  say('epMsg', 'Unlocked. ' + (currentEp?.coin_cost || 0) + ' coins were deducted. Balance: ' + balance + '.');
+}
+
+/* ---------- Buy screen ---------- */
+$('curNGN').onclick = () => { cur = 'NGN'; renderPacks(); };
+$('curUSD').onclick = () => { cur = 'USD'; renderPacks(); };
+
+function renderPacks() {
+  $('curNGN').className = cur === 'NGN' ? '' : 'alt';
+  $('curUSD').className = cur === 'USD' ? '' : 'alt';
+  $('packs').innerHTML = PACKS.map(p => `
+    <div class="card plain pack">
+      <span>${p.label}</span>
+      <button type="button" onclick="buy('${p.id}')">${cur === 'NGN' ? '₦' + p.ngn.toLocaleString() : '$' + p.usd.toFixed(2)}</button>
+    </div>`).join('');
+}
+
+window.buy = async packId => {
+  step('buy tapped: ' + packId + ' ' + cur);
+  if (!user) { say('payMsg', 'Sign in to buy coins.'); return; }
+  say('payMsg', 'Preparing payment...');
+  if (!(await ensureFlutterwave())) {
+    step('Flutterwave script not loaded');
+    say('payMsg', 'Payment window could not load. Check your connection and refresh.');
+    return;
+  }
+  try {
+    const r = await fetch('/api/create-payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify({ packId, currency: cur }),
+    });
+    const p = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      step('create-payment ' + r.status + ' at ' + (p.step || 'unknown step') + ': ' + (p.error || 'no details returned'));
+      say('payMsg', p.error ? p.error : 'Payment service did not respond (' + r.status + '). Please try again in a few minutes.');
+      return;
+    }
+    step('create-payment ok, tx_ref ' + p.tx_ref);
+    say('payMsg', '');
+    FlutterwaveCheckout({
+      public_key: FLW_PUBLIC,
+      tx_ref: p.tx_ref,
+      amount: p.amount,
+      currency: p.currency,
+      payment_options: cur === 'NGN' ? 'banktransfer,card,ussd' : 'card',
+      customer: { email: user.email },
+      customizations: { title: 'Bash Clips TV', description: 'Coin pack' },
+      callback: async res => {
+        step('flutterwave status: ' + res.status);
+        if (res.status !== 'successful') { say('payMsg', 'Payment not completed.'); return; }
+        say('payMsg', 'Confirming payment...');
+        try {
+          const v = await fetch('/api/verify-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            body: JSON.stringify({ transaction_id: res.transaction_id, tx_ref: p.tx_ref }),
+          });
+          const j = await v.json().catch(() => ({}));
+          step('verify-payment ' + v.status + ': ' + JSON.stringify(j));
+          say('payMsg', v.ok ? (j.already ? 'Already credited.' : `+${j.credited} coins added.`) : (j.error || 'Could not confirm payment.'));
+        } catch (err) {
+          step('verify error: ' + err.message);
+          say('payMsg', 'Could not confirm payment: ' + err.message);
+        }
+        await loadBalance();
+      },
+      onclose: () => { step('payment window closed'); say('payMsg', ''); },
+    });
+  } catch (err) {
+    step('buy error: ' + err.message);
+    say('payMsg', 'Payment failed to start: ' + err.message);
+  }
+};
+
+$('tAfrica').onclick = () => openAfrica();
+applyLang();
+step('page loaded');
+const boot = document.getElementById('boot');
+if (boot) boot.remove();
+initConsent();
+if (new URLSearchParams(location.search).get('page') === 'africa') {
+  setTimeout(() => openAfrica(), 3000);
+}
+hideSplashLater();
+function hideSplashLater() {
+  setTimeout(() => { const s = $('splash'); s.style.opacity = 0; setTimeout(() => s.classList.add('hidden'), 400); }, 900);
+}
+</script>
+</body>
+</html>
